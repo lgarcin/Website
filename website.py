@@ -13,12 +13,12 @@ form_class, base_class = uic.loadUiType(scriptdir + '/website.ui')
 
 def read(filename):
     try:
-        with open(filename,"r",encoding='utf8') as f:
-            s=f.read()
+        with open(filename, "r", encoding='utf8') as f:
+            s = f.read()
             f.close()
     except:
-        with open(filename,"r") as f:
-            s=f.read()
+        with open(filename, "r") as f:
+            s = f.read()
             f.close()
     return s
 
@@ -33,14 +33,14 @@ class WebSite(form_class, base_class):
         self.transferButton.setIcon(QtGui.QIcon(scriptdir + "/images/ftp_64.png"))
         self.saveButton.setIcon(QtGui.QIcon(scriptdir + "/images/save_64.png"))
         self.reloadButton.setIcon(QtGui.QIcon(scriptdir + "/images/reload_64.png"))
-        self.rootdir = "E:/Documents/Enseignement/SaintEx"
+        self.rootdir = "E:/Documents/Enseignement/Corot"
         os.chdir(self.rootdir)
         self.load()
 
     def load(self):
         with open("index.html", encoding="utf8") as f:
             self.html = pq(f.read())
-        for form in (self.formDS, self.formDM, self.formColles, self.formCours, self.formInterros, self.formTD, self.formMaple, self.formADS, self.formFormulaires):
+        for form in (self.formDS, self.formDM, self.formColles, self.formCours, self.formInterros, self.formTD, self.formInfo, self.formTDInfo, self.formADS, self.formFormulaires):
             if form is not None:
                 while form.count():
                     item = form.takeAt(0)
@@ -56,7 +56,8 @@ class WebSite(form_class, base_class):
         self.populateCours()
         self.populateInterros()
         self.populateTD()
-        self.populateMaple()
+        self.populateInfo()
+        self.populateTDInfo()
         self.populateADS()
         self.populateFormulaires()
         self.populateAnimations()
@@ -69,7 +70,8 @@ class WebSite(form_class, base_class):
         self.updateCours()
         self.updateInterros()
         self.updateTD()
-        self.updateMaple()
+        self.updateInfo()
+        self.updateTDInfo()
         self.updateADS()
         self.updateFormulaires()
         self.updateAnimations()
@@ -106,13 +108,13 @@ class WebSite(form_class, base_class):
         self.ftp.list()
 
     def buildLocalLists(self):
-        self.localDirList = ["ADS", "DS", "DM", "TD", "Cours", "Colles", "Interros", "Maple", "Formulaires"]
+        self.localDirList = ["ADS", "DS", "DM", "TD", "Cours", "Colles", "Interros", "Informatique", "TDInfo", "Formulaires"]
         self.localFileList = {}
         self.addSpecificDirs('admin', 'css', 'js', 'Notes', 'Animations', 'img', 'jars')
         for file in ("index.html", "robots.txt", "favicon.ico", "404.html"):
             date = datetime.fromtimestamp(os.path.getmtime(file))
             self.localFileList[file] = date            
-        for form in (self.formDS, self.formDM, self.formTD, self.formMaple):
+        for form in (self.formDS, self.formDM, self.formTD, self.formTDInfo):
             if form.count() != 0:
                 for i in range(form.rowCount()):
                     if form.itemAtPosition(i, 1).widget().isChecked() or form.itemAtPosition(i, 2).widget().isChecked():
@@ -126,7 +128,7 @@ class WebSite(form_class, base_class):
                         file = form.itemAtPosition(i, 2).widget().objectName()
                         date = datetime.fromtimestamp(os.path.getmtime(file))
                         self.localFileList[file] = date
-        for form in (self.formColles, self.formCours, self.formInterros, self.formFormulaires):
+        for form in (self.formColles, self.formCours, self.formInterros, self.formInfo, self.formFormulaires):
             for i in range(form.count()):
                 if(form.itemAt(i).widget().isChecked()):
                     file = form.itemAt(i).widget().objectName()
@@ -300,8 +302,8 @@ class WebSite(form_class, base_class):
         i = 0
         for name in os.listdir('Cours'):
             if  os.path.isdir('Cours/' + name):
-                s=read(self.rootdir + "/Cours/" + name + "/" + name + ".tex");
-                titre = re.search(r"\\titrecours{(.*?)}", s, re.DOTALL).group(1)
+                s = read(self.rootdir + "/Cours/" + name + "/" + name + ".tex");
+                titre = re.search(r"\\titrecours{(.*?)}", s, re.DOTALL).group(1).replace('\\\\','<br>')
                 checkbox = QtGui.QCheckBox(titre)
                 path = 'Cours/' + name + '/' + name + '.pdf'
                 checkbox.setObjectName(path)
@@ -330,8 +332,8 @@ class WebSite(form_class, base_class):
         i = 0
         for name in os.listdir('TD'):
             if os.path.isdir('TD/' + name):
-                s=read(self.rootdir + "/TD/" + name + "/" + name + ".tex")
-                titre = re.search(r"\\titretd{(.*?)}", s, re.DOTALL).group(1)
+                s = read(self.rootdir + "/TD/" + name + "/" + name + ".tex")
+                titre = re.search(r"\\titretd{(.*?)}", s, re.DOTALL).group(1).replace('\\\\','<br>')
                 self.formTD.addWidget(QtGui.QLabel(titre), i, 0)
                 checkbox = QtGui.QCheckBox('Enoncé')
                 path = 'TD/' + name + '/' + name + '.pdf'
@@ -351,29 +353,45 @@ class WebSite(form_class, base_class):
                 self.formTD.addWidget(checkbox, i, 2)
                 i = i + 1
 
-    def populateMaple(self):
-        i = 0    
-        for name in os.listdir('Maple'):
-            if "TDMaple" in name and os.path.isdir('Maple/' + name):
-                s=read(self.rootdir + "/Maple/" + name + "/" + name + ".tex")
-                titre = re.search(r"\\titretd{(.*?)}", s, re.DOTALL).group(1)
-                self.formMaple.addWidget(QtGui.QLabel(titre), i, 0)
+    def populateInfo(self):
+        i = 0
+        for name in os.listdir('Informatique'):
+            if  os.path.isdir('Informatique/' + name):
+                s = read(self.rootdir + "/Informatique/" + name + "/" + name + ".tex");
+                titre = re.search(r"\\titrecours{(.*?)}", s, re.DOTALL).group(1).replace('\\\\','<br>')
+                checkbox = QtGui.QCheckBox(titre)
+                path = 'Informatique/' + name + '/' + name + '.pdf'
+                checkbox.setObjectName(path)
+                if self.html('a[href="' + path + '"]'):
+                    checkbox.setChecked(True)
+                if not os.path.exists(path):
+                    checkbox.setDisabled(True)
+                self.formInfo.addWidget(checkbox, i / 4, i % 4)
+                i = i + 1
+
+    def populateTDInfo(self):
+        i = 0
+        for name in os.listdir('TDInfo'):
+            if os.path.isdir('TDInfo/' + name):
+                s = read(self.rootdir + "/TDInfo/" + name + "/" + name + ".tex")
+                titre = re.search(r"\\titretd{(.*?)}", s, re.DOTALL).group(1).replace('\\\\','<br>')
+                self.formTDInfo.addWidget(QtGui.QLabel(titre), i, 0)
                 checkbox = QtGui.QCheckBox('Enoncé')
-                path = 'Maple/' + name + '/' + name + '.pdf'
+                path = 'TDInfo/' + name + '/' + name + '.pdf'
                 checkbox.setObjectName(path)
                 if self.html('a[href="' + path + '"]'):
                     checkbox.setChecked(True)                
                 if not os.path.exists(path):
                     checkbox.setDisabled(True)
-                self.formMaple.addWidget(checkbox, i, 1)
+                self.formTDInfo.addWidget(checkbox, i, 1)
                 checkbox = QtGui.QCheckBox('Corrigé')
-                path = 'Maple/' + name + '/' + name + '_corrige.pdf'
+                path = 'TDInfo/' + name + '/' + name + '_corrige.pdf'
                 checkbox.setObjectName(path)
                 if self.html('a[href="' + path + '"]'):
                     checkbox.setChecked(True)                
                 if not os.path.exists(path):
                     checkbox.setDisabled(True)
-                self.formMaple.addWidget(checkbox, i, 2)
+                self.formTDInfo.addWidget(checkbox, i, 2)
                 i = i + 1
 
     def populateADS(self):
@@ -404,7 +422,7 @@ class WebSite(form_class, base_class):
         i = 0
         for name in os.listdir('Formulaires'):
             if os.path.isdir('Formulaires/' + name):
-                s=read(self.rootdir + "/Formulaires/" + name + "/" + name + ".tex")
+                s = read(self.rootdir + "/Formulaires/" + name + "/" + name + ".tex")
                 titre = re.search(r"\\titreformulaire{(.*?)}", s, re.DOTALL).group(1)
                 checkbox = QtGui.QCheckBox(titre)
                 path = 'Formulaires/' + name + '/' + name + '.pdf'
@@ -551,27 +569,41 @@ class WebSite(form_class, base_class):
                 li.append(pq('<br>'))
                 ul.append(li)
         
-    def updateMaple(self):
-        tdmaple = self.html('div#maple')
-        ul = tdmaple('ul')
+    def updateInfo(self):
+        info = self.html('div#coursinfo')
+        ul = info('ul')
         ul.empty()
-        if self.formMaple.count() == 0:
+        for i in range(self.formInfo.count()):
+            if(self.formInfo.itemAt(i).widget().isChecked()):
+                name = self.formInfo.itemAt(i).widget().text()
+                path = self.formInfo.itemAt(i).widget().objectName()
+                li = pq('<li>')
+                li.append(pq('<a>').attr(href=path).append(pq('<img src="" alt="" class="bigpdf">')))
+                li.append(pq('<br>'))
+                li.append('<p>' + name + '</p>')
+                ul.append(li)
+   
+    def updateTDInfo(self):
+        sujetstdinfo = self.html('div#tdinfo')
+        ul = sujetstdinfo('ul')
+        ul.empty()
+        if self.formTDInfo.count() == 0:
             return
-        for i in range(self.formMaple.rowCount()):
-            if self.formMaple.itemAtPosition(i, 1).widget().isChecked() or self.formMaple.itemAtPosition(i, 2).widget().isChecked():
-                name = self.formMaple.itemAtPosition(i, 0).widget().text()
+        for i in range(self.formTDInfo.rowCount()):
+            if self.formTDInfo.itemAtPosition(i, 1).widget().isChecked() or self.formTDInfo.itemAtPosition(i, 2).widget().isChecked(): 
+                name = self.formTDInfo.itemAtPosition(i, 0).widget().text()
                 li = pq('<li>').html(name)
                 li.append(pq('<br>'))
-                if self.formMaple.itemAtPosition(i, 1).widget().isChecked():
-                    path = self.formMaple.itemAtPosition(i, 1).widget().objectName()
+                if self.formTDInfo.itemAtPosition(i, 1).widget().isChecked():
+                    path = self.formTDInfo.itemAtPosition(i, 1).widget().objectName()
                     li.append(pq('<a>').html('Enoncé').attr(href=path).append('<img src="" alt="" class="smallpdf"/>'))
-                li.append(pq('<br>'))
-                if self.formMaple.itemAtPosition(i, 2).widget().isChecked():
-                    path = self.formMaple.itemAtPosition(i, 2).widget().objectName()
+                li.append('<br>')
+                if self.formTDInfo.itemAtPosition(i, 2).widget().isChecked():
+                    path = self.formTDInfo.itemAtPosition(i, 2).widget().objectName()
                     li.append(pq('<a>').html('Corrigé').attr(href=path).append('<img src="" alt="" class="smallpdf"/>'))
                 li.append(pq('<br>'))
                 ul.append(li)
-    
+        
     def updateADS(self):
         presentations = self.html('div#presentations')
         ul = presentations('ul')

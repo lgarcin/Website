@@ -23,7 +23,7 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>9</number>
+    <number>4</number>
    </property>
    <widget class="QWidget" name="tabDS">
     <attribute name="title">
@@ -197,9 +197,9 @@
      <layout class="QGridLayout" name="formTD"/>
     </widget>
    </widget>
-   <widget class="QWidget" name="tabMaple">
+   <widget class="QWidget" name="tabInfo">
     <attribute name="title">
-     <string>Maple</string>
+     <string>Info</string>
     </attribute>
     <widget class="QWidget" name="gridLayoutWidget_7">
      <property name="geometry">
@@ -210,7 +210,23 @@
        <height>541</height>
       </rect>
      </property>
-     <layout class="QGridLayout" name="formMaple"/>
+     <layout class="QGridLayout" name="formInfo"/>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="tabTDInfo">
+    <attribute name="title">
+     <string>TDInfo</string>
+    </attribute>
+    <widget class="QWidget" name="gridLayoutWidget_11">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>711</width>
+       <height>541</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="formTDInfo"/>
     </widget>
    </widget>
    <widget class="QWidget" name="tabFormulaires">
