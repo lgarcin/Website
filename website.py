@@ -40,7 +40,7 @@ class WebSite(form_class, base_class):
     def load(self):
         with open("index.html", encoding="utf8") as f:
             self.html = pq(f.read())
-        for form in (self.formDS, self.formDM, self.formColles, self.formCours, self.formInterros, self.formTD, self.formInfo, self.formTDInfo, self.formADS, self.formFormulaires):
+        for form in (self.formDS, self.formDM, self.formColles, self.formCours, self.formInterros, self.formTD, self.formInfo, self.formTDInfo, self.formTPInfo, self.formADS, self.formFormulaires):
             if form is not None:
                 while form.count():
                     item = form.takeAt(0)
@@ -57,7 +57,10 @@ class WebSite(form_class, base_class):
         self.populateInterros()
         self.populateTD()
         self.populateInfo()
+        self.populateSlidesInfo()
         self.populateTDInfo()
+        self.populateTPInfo()
+        self.populateDSInfo()
         self.populateADS()
         self.populateFormulaires()
         self.populateAnimations()
@@ -71,7 +74,10 @@ class WebSite(form_class, base_class):
         self.updateInterros()
         self.updateTD()
         self.updateInfo()
+        self.updateSlidesInfo()
         self.updateTDInfo()
+        self.updateTPInfo()
+        self.updateDSInfo()
         self.updateADS()
         self.updateFormulaires()
         self.updateAnimations()
@@ -108,13 +114,13 @@ class WebSite(form_class, base_class):
         self.ftp.list()
 
     def buildLocalLists(self):
-        self.localDirList = ["ADS", "DS", "DM", "TD", "Cours", "Colles", "Interros", "Informatique", "TDInfo", "Formulaires"]
+        self.localDirList = ["ADS", "DS", "DM", "TD", "Cours", "Colles", "Interros", "Informatique", "SlidesInfo", "TDInfo", "TPInfo", "DSInfo", "Formulaires"]
         self.localFileList = {}
-        self.addSpecificDirs('admin', 'css', 'js', 'Notes', 'Animations', 'img', 'jars')
+        self.addSpecificDirs('admin', 'css', 'js', 'Notes', 'Animations', 'img', 'jars', 'fonts')
         for file in ("index.html", "robots.txt", "favicon.ico", "404.html"):
             date = datetime.fromtimestamp(os.path.getmtime(file))
             self.localFileList[file] = date            
-        for form in (self.formDS, self.formDM, self.formTD, self.formTDInfo):
+        for form in (self.formDS, self.formDM, self.formTD, self.formTDInfo, self.formTPInfo):
             if form.count() != 0:
                 for i in range(form.rowCount()):
                     if form.itemAtPosition(i, 1).widget().isChecked() or form.itemAtPosition(i, 2).widget().isChecked():
@@ -303,7 +309,7 @@ class WebSite(form_class, base_class):
         for name in os.listdir('Cours'):
             if  os.path.isdir('Cours/' + name):
                 s = read(self.rootdir + "/Cours/" + name + "/" + name + ".tex");
-                titre = re.search(r"\\titrecours{(.*?)}", s, re.DOTALL).group(1).replace('\\\\','<br>')
+                titre = re.search(r"\\titrecours{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
                 checkbox = QtGui.QCheckBox(titre)
                 path = 'Cours/' + name + '/' + name + '.pdf'
                 checkbox.setObjectName(path)
@@ -333,7 +339,7 @@ class WebSite(form_class, base_class):
         for name in os.listdir('TD'):
             if os.path.isdir('TD/' + name):
                 s = read(self.rootdir + "/TD/" + name + "/" + name + ".tex")
-                titre = re.search(r"\\titretd{(.*?)}", s, re.DOTALL).group(1).replace('\\\\','<br>')
+                titre = re.search(r"\\titretd{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
                 self.formTD.addWidget(QtGui.QLabel(titre), i, 0)
                 checkbox = QtGui.QCheckBox('Enoncé')
                 path = 'TD/' + name + '/' + name + '.pdf'
@@ -358,7 +364,7 @@ class WebSite(form_class, base_class):
         for name in os.listdir('Informatique'):
             if  os.path.isdir('Informatique/' + name):
                 s = read(self.rootdir + "/Informatique/" + name + "/" + name + ".tex");
-                titre = re.search(r"\\titrecours{(.*?)}", s, re.DOTALL).group(1).replace('\\\\','<br>')
+                titre = re.search(r"\\titrecours{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
                 checkbox = QtGui.QCheckBox(titre)
                 path = 'Informatique/' + name + '/' + name + '.pdf'
                 checkbox.setObjectName(path)
@@ -369,12 +375,28 @@ class WebSite(form_class, base_class):
                 self.formInfo.addWidget(checkbox, i / 4, i % 4)
                 i = i + 1
 
+    def populateSlidesInfo(self):
+        i = 0
+        for name in os.listdir('SlidesInfo'):
+            if  os.path.isdir('SlidesInfo/' + name):
+                s = read(self.rootdir + "/SlidesInfo/" + name + "/" + name + ".tex");
+                titre = re.search(r"\\title{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
+                checkbox = QtGui.QCheckBox(titre)
+                path = 'SlidesInfo/' + name + '/' + name + '.pdf'
+                checkbox.setObjectName(path)
+                if self.html('a[href="' + path + '"]'):
+                    checkbox.setChecked(True)
+                if not os.path.exists(path):
+                    checkbox.setDisabled(True)
+                self.formSlidesInfo.addWidget(checkbox, i / 4, i % 4)
+                i = i + 1
+
     def populateTDInfo(self):
         i = 0
         for name in os.listdir('TDInfo'):
             if os.path.isdir('TDInfo/' + name):
                 s = read(self.rootdir + "/TDInfo/" + name + "/" + name + ".tex")
-                titre = re.search(r"\\titretd{(.*?)}", s, re.DOTALL).group(1).replace('\\\\','<br>')
+                titre = re.search(r"\\titretd{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
                 self.formTDInfo.addWidget(QtGui.QLabel(titre), i, 0)
                 checkbox = QtGui.QCheckBox('Enoncé')
                 path = 'TDInfo/' + name + '/' + name + '.pdf'
@@ -394,6 +416,54 @@ class WebSite(form_class, base_class):
                 self.formTDInfo.addWidget(checkbox, i, 2)
                 i = i + 1
 
+    def populateTPInfo(self):
+        i = 0
+        for name in os.listdir('TPInfo'):
+            if os.path.isdir('TPInfo/' + name):
+                s = read(self.rootdir + "/TPInfo/" + name + "/" + name + ".tex")
+                titre = re.search(r"\\titretp{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
+                self.formTPInfo.addWidget(QtGui.QLabel(titre), i, 0)
+                checkbox = QtGui.QCheckBox('Enoncé')
+                path = 'TPInfo/' + name + '/' + name + '.pdf'
+                checkbox.setObjectName(path)
+                if self.html('a[href="' + path + '"]'):
+                    checkbox.setChecked(True)                
+                if not os.path.exists(path):
+                    checkbox.setDisabled(True)
+                self.formTPInfo.addWidget(checkbox, i, 1)
+                checkbox = QtGui.QCheckBox('Corrigé')
+                path = 'TPInfo/' + name + '/' + name + '_corrige.pdf'
+                checkbox.setObjectName(path)
+                if self.html('a[href="' + path + '"]'):
+                    checkbox.setChecked(True)                
+                if not os.path.exists(path):
+                    checkbox.setDisabled(True)
+                self.formTPInfo.addWidget(checkbox, i, 2)
+                i = i + 1
+
+    def populateDSInfo(self):
+        i = 0
+        for name in os.listdir('DSInfo'):
+            if 'DSInfo' in name and os.path.isdir('DSInfo/' + name):
+                self.formDSInfo.addWidget(QtGui.QLabel(name), i, 0)
+                checkbox = QtGui.QCheckBox('Enoncé')
+                path = 'DSInfo/' + name + '/' + name + '.pdf'
+                checkbox.setObjectName(path)
+                if self.html('a[href="' + path + '"]'):
+                    checkbox.setChecked(True)                
+                if not os.path.exists(path):
+                    checkbox.setDisabled(True)
+                self.formDSInfo.addWidget(checkbox, i, 1)
+                checkbox = QtGui.QCheckBox('Corrigé')
+                path = 'DSInfo/' + name + '/' + name + '_corrige.pdf'
+                checkbox.setObjectName(path)
+                if self.html('a[href="' + path + '"]'):
+                    checkbox.setChecked(True)                
+                if not os.path.exists(path):
+                    checkbox.setDisabled(True)
+                self.formDSInfo.addWidget(checkbox, i, 2)
+                i = i + 1
+            
     def populateADS(self):
         presentations = self.html('div#presentations')
         i = 0
@@ -531,6 +601,7 @@ class WebSite(form_class, base_class):
                 li.append(pq('<a>').attr(href=path).append(pq('<img src="" alt="" class="bigpdf">')))
                 li.append(pq('<br>'))
                 li.append('<p>' + name + '</p>')
+                li.append(pq('<br>'))
                 ul.append(li)
 
     def updateInterros(self):
@@ -546,6 +617,7 @@ class WebSite(form_class, base_class):
                 li.append(pq('<a>').attr(href=path).append(pq('<img src="" alt="" class="bigpdf">')))
                 li.append(pq('<br>'))
                 li.append('<p>' + "Interro n°" + number + '</p>')
+                li.append(pq('<br>'))
                 ul.append(li)
         
     def updateTD(self):
@@ -557,7 +629,7 @@ class WebSite(form_class, base_class):
         for i in range(self.formTD.rowCount()):
             if self.formTD.itemAtPosition(i, 1).widget().isChecked() or self.formTD.itemAtPosition(i, 2).widget().isChecked(): 
                 name = self.formTD.itemAtPosition(i, 0).widget().text()
-                li = pq('<li>').html(name)
+                li = pq('<li>').html('<p>' + name + '</p>')
                 li.append(pq('<br>'))
                 if self.formTD.itemAtPosition(i, 1).widget().isChecked():
                     path = self.formTD.itemAtPosition(i, 1).widget().objectName()
@@ -581,6 +653,22 @@ class WebSite(form_class, base_class):
                 li.append(pq('<a>').attr(href=path).append(pq('<img src="" alt="" class="bigpdf">')))
                 li.append(pq('<br>'))
                 li.append('<p>' + name + '</p>')
+                li.append(pq('<br>'))
+                ul.append(li)
+   
+    def updateSlidesInfo(self):
+        info = self.html('div#slidesinfo')
+        ul = info('ul')
+        ul.empty()
+        for i in range(self.formSlidesInfo.count()):
+            if(self.formSlidesInfo.itemAt(i).widget().isChecked()):
+                name = self.formSlidesInfo.itemAt(i).widget().text()
+                path = self.formSlidesInfo.itemAt(i).widget().objectName()
+                li = pq('<li>')
+                li.append(pq('<a>').attr(href=path).append(pq('<img src="" alt="" class="bigpdf">')))
+                li.append(pq('<br>'))
+                li.append('<p>' + name + '</p>')
+                li.append(pq('<br>'))
                 ul.append(li)
    
     def updateTDInfo(self):
@@ -592,7 +680,7 @@ class WebSite(form_class, base_class):
         for i in range(self.formTDInfo.rowCount()):
             if self.formTDInfo.itemAtPosition(i, 1).widget().isChecked() or self.formTDInfo.itemAtPosition(i, 2).widget().isChecked(): 
                 name = self.formTDInfo.itemAtPosition(i, 0).widget().text()
-                li = pq('<li>').html(name)
+                li = pq('<li>').html('<p>' + name + '</p>')
                 li.append(pq('<br>'))
                 if self.formTDInfo.itemAtPosition(i, 1).widget().isChecked():
                     path = self.formTDInfo.itemAtPosition(i, 1).widget().objectName()
@@ -604,6 +692,50 @@ class WebSite(form_class, base_class):
                 li.append(pq('<br>'))
                 ul.append(li)
         
+    def updateTPInfo(self):
+        sujetstpinfo = self.html('div#tpinfo')
+        ul = sujetstpinfo('ul')
+        ul.empty()
+        if self.formTPInfo.count() == 0:
+            return
+        for i in range(self.formTPInfo.rowCount()):
+            if self.formTPInfo.itemAtPosition(i, 1).widget().isChecked() or self.formTPInfo.itemAtPosition(i, 2).widget().isChecked(): 
+                name = self.formTPInfo.itemAtPosition(i, 0).widget().text()
+                li = pq('<li>').html('<p>' + name + '</p>')
+                li.append(pq('<br>'))
+                if self.formTPInfo.itemAtPosition(i, 1).widget().isChecked():
+                    path = self.formTPInfo.itemAtPosition(i, 1).widget().objectName()
+                    li.append(pq('<a>').html('Enoncé').attr(href=path).append('<img src="" alt="" class="smallpdf"/>'))
+                li.append('<br>')
+                if self.formTPInfo.itemAtPosition(i, 2).widget().isChecked():
+                    path = self.formTPInfo.itemAtPosition(i, 2).widget().objectName()
+                    li.append(pq('<a>').html('Corrigé').attr(href=path).append('<img src="" alt="" class="smallpdf"/>'))
+                li.append(pq('<br>'))
+                ul.append(li)
+        
+    def updateDSInfo(self):
+        dsinfo = self.html('div#dsinfo')
+        ul = dsinfo('ul')
+        ul.empty()
+        if self.formDSInfo.count() == 0:
+            return
+        for i in range(self.formDSInfo.rowCount()):
+            if self.formDSInfo.itemAtPosition(i, 1).widget().isChecked() or self.formDSInfo.itemAtPosition(i, 2).widget().isChecked():
+                number = self.formDSInfo.itemAtPosition(i, 1).widget().objectName()
+                number = os.path.splitext(os.path.basename(number))[0]
+                number = number.replace('DSInfo', '').lstrip('0')
+                li = pq('<li>').html("Devoir n°" + number)
+                li.append(pq('<br>'))
+                if self.formDSInfo.itemAtPosition(i, 1).widget().isChecked():
+                    path = self.formDSInfo.itemAtPosition(i, 1).widget().objectName()
+                    li.append(pq('<a>').html('Enoncé').attr(href=path).append('<img src="" alt="" class="smallpdf"/>'))
+                li.append(pq('<br>'))
+                if self.formDSInfo.itemAtPosition(i, 2).widget().isChecked():
+                    path = self.formDSInfo.itemAtPosition(i, 2).widget().objectName()
+                    li.append(pq('<a>').html('Corrigé').attr(href=path).append('<img src="" alt="" class="smallpdf"/>'))
+                li.append(pq('<br>'))
+                ul.append(li)
+ 
     def updateADS(self):
         presentations = self.html('div#presentations')
         ul = presentations('ul')
@@ -637,6 +769,7 @@ class WebSite(form_class, base_class):
                 li.append(pq('<a>').attr(href=path).append(pq('<img src="" alt="" class="bigpdf">')))
                 li.append(pq('<br>'))
                 li.append('<p>' + self.formFormulaires.itemAt(i).widget().text() + '</p>')
+                li.append(pq('<br>'))
                 ul.append(li)
         
     def updateAnimations(self):
