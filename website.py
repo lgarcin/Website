@@ -360,6 +360,8 @@ class WebSite(form_class, base_class):
                 i = i + 1
 
     def populateInfo(self):
+        if not os.path.exists('Informatique'):
+            return
         i = 0
         for name in os.listdir('Informatique'):
             if  os.path.isdir('Informatique/' + name):
@@ -376,6 +378,8 @@ class WebSite(form_class, base_class):
                 i = i + 1
 
     def populateSlidesInfo(self):
+        if not os.path.exists('SlidesInfo'):
+            return
         i = 0
         for name in os.listdir('SlidesInfo'):
             if  os.path.isdir('SlidesInfo/' + name):
@@ -392,6 +396,8 @@ class WebSite(form_class, base_class):
                 i = i + 1
 
     def populateTDInfo(self):
+        if not os.path.exists('TDInfo'):
+            return
         i = 0
         for name in os.listdir('TDInfo'):
             if os.path.isdir('TDInfo/' + name):
@@ -417,6 +423,8 @@ class WebSite(form_class, base_class):
                 i = i + 1
 
     def populateTPInfo(self):
+        if not os.path.exists('TPInfo'):
+            return
         i = 0
         for name in os.listdir('TPInfo'):
             if os.path.isdir('TPInfo/' + name):
@@ -442,6 +450,8 @@ class WebSite(form_class, base_class):
                 i = i + 1
 
     def populateDSInfo(self):
+        if not os.path.exists('DSInfo'):
+            return
         i = 0
         for name in os.listdir('DSInfo'):
             if 'DSInfo' in name and os.path.isdir('DSInfo/' + name):
