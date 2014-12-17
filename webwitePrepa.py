@@ -5,12 +5,16 @@ Created on 27 nov. 2014
 '''
 
 # Remplacer les os par des QDir, QFile
+# Remplacer les re par des QRegExp ou QRegularExpression (pyqt5)
 
-import sys, locale, os, re, json
+
+import sys, locale, os, re, json, io
 from PyQt4 import QtGui, QtCore, uic
+# from dropbox import client
+from dropbox.client import DropboxClient
 
 scriptdir = os.path.dirname(__file__)
-form_class, base_class = uic.loadUiType(scriptdir + '/websitePrepa.ui')
+form_class, base_class = uic.loadUiType(os.path.join(scriptdir, 'websitePrepa.ui'))
 
 def read(filename):
     try:
@@ -22,25 +26,23 @@ def read(filename):
             s = f.read()
             f.close()
     return s
-
     
 class EnonceCorrigeWidget(QtGui.QWidget):
     def __init__(self, enonce, corrige, parent=None):
         super(EnonceCorrigeWidget, self).__init__(parent)
-        transferInfo=self.parent().transferInfo
+        transferInfo = self.parent().transferInfo
         nomWidget = QtGui.QLabel(enonce['nom'])
         enonceWidget = QtGui.QCheckBox('Enoncé')
         enonceWidget.stateChanged.connect(lambda state: transferInfo.append(enonce) if state == QtCore.Qt.Checked else transferInfo.remove(enonce))
         if enonce in self.parent().remoteInfo:
             enonceWidget.setCheckState(QtCore.Qt.Checked)
-        if not os.path.exists(self.parent().localdir + enonce['path']):
-            print(self.parent().localdir + enonce['path'])
+        if not os.path.exists(os.path.join(self.parent().localDir, enonce['path'])):
             enonceWidget.setDisabled(True)
         corrigeWidget = QtGui.QCheckBox('Corrigé')
         corrigeWidget.stateChanged.connect(lambda state: transferInfo.append(corrige) if state == QtCore.Qt.Checked else transferInfo.remove(corrige))
         if corrige in self.parent().remoteInfo:
             corrigeWidget.setCheckState(QtCore.Qt.Checked)
-        if not os.path.exists(self.parent().localdir + corrige['path']):
+        if not os.path.exists(os.path.join(self.parent().localDir, corrige['path'])):
             corrigeWidget.setDisabled(True)
         layout = QtGui.QHBoxLayout(self)
         layout.addWidget(nomWidget)
@@ -50,12 +52,12 @@ class EnonceCorrigeWidget(QtGui.QWidget):
 class CoursWidget(QtGui.QWidget):
     def __init__(self, cours, parent=None):
         super(CoursWidget, self).__init__(parent)
-        transferInfo=self.parent().transferInfo
+        transferInfo = self.parent().transferInfo
         coursWidget = QtGui.QCheckBox(cours['nom'])
         coursWidget.stateChanged.connect(lambda state: transferInfo.append(cours) if state == QtCore.Qt.Checked else transferInfo.remove(cours))
         if cours in self.parent().remoteInfo:
             coursWidget.setCheckState(QtCore.Qt.Checked)
-        if not os.path.exists(self.parent().localdir + cours['path']):
+        if not os.path.exists(os.path.join(self.parent().localDir, cours['path'])):
             coursWidget.setDisabled(True)
         layout = QtGui.QHBoxLayout(self)
         layout.addWidget(coursWidget)
@@ -63,7 +65,7 @@ class CoursWidget(QtGui.QWidget):
 class AnimationWidget(QtGui.QWidget):
     def __init__(self, animation, parent=None):
         super(AnimationWidget, self).__init__(parent)
-        transferInfo=self.parent().transferInfo
+        transferInfo = self.parent().transferInfo
         transferInfo.append(animation)
         self.destroyed.connect(lambda _:transferInfo.remove(animation))
         nomWidget = QtGui.QLineEdit(animation['nom'])
@@ -89,7 +91,7 @@ class AnimationWidget(QtGui.QWidget):
 class ADSWidget(QtGui.QWidget):
     def __init__(self, ads, parent=None):
         super(ADSWidget, self).__init__(parent)
-        transferInfo=self.parent().transferInfo
+        transferInfo = self.parent().transferInfo
         transferInfo.append(ads)
         self.destroyed.connect(lambda _:transferInfo.remove(ads))
         nomWidget = QtGui.QLineEdit(ads['nom'])
@@ -120,16 +122,17 @@ class WebSite(form_class, base_class):
     def __init__(self, parent=None):
         super(WebSite, self).__init__(parent)
         self.setupUi(self)
-        self.addADSButton.setIcon(QtGui.QIcon(scriptdir + "/images/plus_32.ico"))
-        self.removeADSButton.setIcon(QtGui.QIcon(scriptdir + "/images/delete_32.ico"))
-        self.addAnimationsButton.setIcon(QtGui.QIcon(scriptdir + "/images/plus_32.ico"))
-        self.removeAnimationsButton.setIcon(QtGui.QIcon(scriptdir + "/images/delete_32.ico"))
-        self.transferButton.setIcon(QtGui.QIcon(scriptdir + "/images/ftp_64.png"))
-        self.localdir = "E:/Documents/Enseignement/Corot/"
-        self.remotedir = "E:/Documents/Enseignement/Test/"
-        os.chdir(self.localdir)
+        self.addADSButton.setIcon(QtGui.QIcon(os.path.join(scriptdir, "images/plus_32.ico")))
+        self.removeADSButton.setIcon(QtGui.QIcon(os.path.join(scriptdir, "images/delete_32.ico")))
+        self.addAnimationsButton.setIcon(QtGui.QIcon(os.path.join(scriptdir, "images/plus_32.ico")))
+        self.removeAnimationsButton.setIcon(QtGui.QIcon(os.path.join(scriptdir, "images/delete_32.ico")))
+        self.transferButton.setIcon(QtGui.QIcon(os.path.join(scriptdir, "images/ftp_64.png")))
+        self.localDir = "E:/Documents/Enseignement/Corot/"
+        self.remoteDir = "E:/Documents/Enseignement/Test/"
+        os.chdir(self.localDir)
         self.transferInfo = []
         self.getLocalInfo()
+        self.client = DropboxClient('gS7qI3Fbn2AAAAAAAAAAFqW6G3O73LJxk9yZutwCO5Q2RT-bbYVdbbz-EskRLiQj')
         self.getRemoteInfo()
         self.fillForms()
 
@@ -137,16 +140,21 @@ class WebSite(form_class, base_class):
         return [e for e in self.localInfo if e['type'] == t]
 
     def pairs(self, typeEnonce, typeCorrige):
-        enonces = sorted([e for e in self.localInfo if e['type'] == typeEnonce], key=lambda e:e['nom'])
-        corriges = sorted([e for e in self.localInfo if e['type'] == typeCorrige], key=lambda e:e['nom'])
-        return zip(enonces, corriges)
+        enonces = [e for e in self.localInfo if e['type'] == typeEnonce]
+        corriges = [c for c in self.localInfo if c['type'] == typeCorrige]
+        return [(e,c) for e in enonces for c in corriges if e['nom']==c['nom']]
         
     def getRemoteInfo(self):
         try:
-            with open(self.remotedir + "/app/data.json", "r", encoding='utf8') as f:
-                self.remoteInfo = json.load(f)
+            with self.client.get_file('data.json') as f:
+                self.remoteInfo=json.loads(f.read().decode('utf-8'))
         except:
-            self.remoteInfo = []
+            self.remoteInfo=[]
+#         try:
+#             with open(os.path.join(self.remoteDir, "app/data.json"), "r", encoding='utf8') as f:
+#                 self.remoteInfo = json.load(f)
+#         except:
+#             self.remoteInfo = []
             
     def getLocalInfo(self):
         self.localInfo = []
@@ -162,13 +170,13 @@ class WebSite(form_class, base_class):
                 
         for name in sorted(os.listdir('Cours')):
             if  os.path.isdir('Cours/' + name):
-                s = read(self.localdir + "Cours/" + name + "/" + name + ".tex");
+                s = read(self.localDir + "Cours/" + name + "/" + name + ".tex");
                 titre = re.search(r"\\titrecours{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
                 self.localInfo.append({'nom':titre, 'type':'cours', 'path':'Cours/' + name + '/' + name + '.pdf'})
                 
         for name in sorted(os.listdir('Formulaires')):
             if  os.path.isdir('Formulaires/' + name):
-                s = read(self.localdir + "Formulaires/" + name + "/" + name + ".tex");
+                s = read(self.localDir + "Formulaires/" + name + "/" + name + ".tex");
                 titre = re.search(r"\\titreformulaire{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
                 self.localInfo.append({'nom':titre, 'type':'formulaire', 'path':'Formulaires/' + name + '/' + name + '.pdf'})
 
@@ -182,7 +190,7 @@ class WebSite(form_class, base_class):
                 
         for name in sorted(os.listdir('TD')):
             if  os.path.isdir('TD/' + name):
-                s = read(self.localdir + "TD/" + name + "/" + name + ".tex")
+                s = read(self.localDir + "TD/" + name + "/" + name + ".tex")
                 titre = re.search(r"\\titretd{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
                 self.localInfo.append({'nom':titre, 'type':'enonceTD', 'path':'TD/' + name + '/' + name + '.pdf'})
                 self.localInfo.append({'nom':titre, 'type':'corrigeTD', 'path':'TD/' + name + '/' + name + '_corrige.pdf'})
@@ -191,26 +199,26 @@ class WebSite(form_class, base_class):
     
         for name in sorted(os.listdir('Info')):
             if  os.path.isdir('Info/' + name):
-                s = read(self.localdir + "Info/" + name + "/" + name + ".tex");
+                s = read(self.localDir + "Info/" + name + "/" + name + ".tex");
                 titre = re.search(r"\\titrecours{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
                 self.localInfo.append({'nom':titre, 'type':'info', 'path':'Info/' + name + '/' + name + '.pdf'})
                 
         for name in sorted(os.listdir('SlidesInfo')):
             if  os.path.isdir('SlidesInfo/' + name):
-                s = read(self.localdir + "SlidesInfo/" + name + "/" + name + ".tex");
+                s = read(self.localDir + "SlidesInfo/" + name + "/" + name + ".tex");
                 titre = re.search(r"\\title{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
                 self.localInfo.append({'nom':titre, 'type':'slidesinfo', 'path':'SlidesInfo/' + name + '/' + name + '.pdf'})
                 
         for name in sorted(os.listdir('TDInfo')):
             if  os.path.isdir('TDInfo/' + name):
-                s = read(self.localdir + "TDInfo/" + name + "/" + name + ".tex")
+                s = read(self.localDir + "TDInfo/" + name + "/" + name + ".tex")
                 titre = re.search(r"\\titretd{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
                 self.localInfo.append({'nom':titre, 'type':'enonceTDInfo', 'path':'TDInfo/' + name + '/' + name + '.pdf'})
                 self.localInfo.append({'nom':titre, 'type':'corrigeTDInfo', 'path':'TDInfo/' + name + '/' + name + '_corrige.pdf'})
                 
         for name in sorted(os.listdir('TPInfo')):
             if  os.path.isdir('TPInfo/' + name):
-                s = read(self.localdir + "TPInfo/" + name + "/" + name + ".tex")
+                s = read(self.localDir + "TPInfo/" + name + "/" + name + ".tex")
                 titre = re.search(r"\\titretd{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
                 self.localInfo.append({'nom':titre, 'type':'enonceTPInfo', 'path':'TPInfo/' + name + '/' + name + '.pdf'})
                 self.localInfo.append({'nom':titre, 'type':'corrigeTPInfo', 'path':'TPInfo/' + name + '/' + name + '_corrige.pdf'})
@@ -276,14 +284,39 @@ class WebSite(form_class, base_class):
         self.populateAnimations()
         
     def writeTransferInfo(self):
-        with open(self.remotedir + "/app/data.json", "w", encoding='utf8') as f:
-            json.dump(self.transferInfo, f);
-            f.close()
+        f = io.StringIO()
+        json.dump(self.transferInfo, f)
+        self.client.put_file("data.json", f, overwrite=True)
+#         with open(self.remoteDir + "app/data.json", "w", encoding='utf8') as f:
+#             json.dump(self.transferInfo, f);
+#             f.close()
             
     def transferFiles(self):
-        filesToCopy=[e['path'] for e in self.transferInfo if 'path' in e.keys()]
-        filesToDelete=[e['path'] for e in self.remoteInfo if 'path' in e.keys() and e not in self.transferInfo]
-        
+        filesToCopy = [e for e in self.transferInfo if 'path' in e.keys()]
+        filesToDelete = [e for e in self.remoteInfo if 'path' in e.keys() and e not in self.transferInfo]
+        for e in filesToCopy:
+            f=e['path']
+            with open(os.path.join(self.localDir, f), 'rb') as fd:
+                self.client.put_file(os.path.basename(f), fd, overwrite=True)
+                self.message.setDetailedText("Copie de " + os.path.basename(f))
+                #e['lien']=self.client.share(os.path.basename(f))['url']
+        for f in filesToDelete:
+            self.client.file_delete(os.path.basename(f))
+            self.message.setDetailedText("Destruction de " + os.path.basename(f))
+#         for f in filesToCopy:
+#             fullPath = os.path.join(self.remoteDir, "app/" + f)
+#             fullDir = os.path.dirname(fullPath)
+#             if not os.path.exists(fullDir):
+#                 os.makedirs(fullDir)
+#             shutil.copyfile(os.path.join(self.localDir, f), fullPath)
+#         for f in filesToDelete:
+#             fullPath = os.path.join(self.remoteDir, "app/" + f)
+#             fullDir = os.path.dirname(fullPath)
+#             os.remove(fullPath)
+#             try:
+#                 os.rmdir(fullDir)
+#             except:
+#                 pass
         # # heroku
               
     @QtCore.pyqtSlot()
@@ -317,6 +350,7 @@ class WebSite(form_class, base_class):
         self.message = QtGui.QMessageBox(QtGui.QMessageBox.Information, "Sauvegarde", "Sauvegarde", QtGui.QMessageBox.Cancel)
         self.message.setInformativeText("Sauvegarde en cours")
         self.message.show()
+        self.transferFiles()
         self.writeTransferInfo()
         self.message.setInformativeText("Sauvegarde terminée")
                 

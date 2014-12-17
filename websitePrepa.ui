@@ -1,0 +1,388 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>WebSite</class>
+ <widget class="QDialog" name="WebSite">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>808</width>
+    <height>684</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <widget class="QTabWidget" name="tabs">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>771</width>
+     <height>581</height>
+    </rect>
+   </property>
+   <property name="currentIndex">
+    <number>11</number>
+   </property>
+   <widget class="QWidget" name="tabDS">
+    <attribute name="title">
+     <string>DS</string>
+    </attribute>
+    <widget class="QWidget" name="gridLayoutWidget_3">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>751</width>
+       <height>541</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="formDS"/>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="tabDM">
+    <attribute name="title">
+     <string>DM</string>
+    </attribute>
+    <widget class="QWidget" name="gridLayoutWidget">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>751</width>
+       <height>541</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="formDM" rowminimumheight="0" columnminimumwidth="0">
+      <property name="sizeConstraint">
+       <enum>QLayout::SetNoConstraint</enum>
+      </property>
+      <property name="spacing">
+       <number>6</number>
+      </property>
+     </layout>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="tabColles">
+    <attribute name="title">
+     <string>Colles</string>
+    </attribute>
+    <widget class="QWidget" name="gridLayoutWidget_2">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>751</width>
+       <height>541</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="formColles"/>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="tabADS">
+    <attribute name="title">
+     <string>ADS</string>
+    </attribute>
+    <widget class="QWidget" name="verticalLayoutWidget">
+     <property name="geometry">
+      <rect>
+       <x>720</x>
+       <y>10</y>
+       <width>41</width>
+       <height>71</height>
+      </rect>
+     </property>
+     <layout class="QVBoxLayout" name="buttonsADS">
+      <property name="spacing">
+       <number>6</number>
+      </property>
+      <item>
+       <widget class="QPushButton" name="addADSButton">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>32</width>
+          <height>32</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="removeADSButton">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>32</width>
+          <height>32</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+    <widget class="QWidget" name="gridLayoutWidget_8">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>701</width>
+       <height>541</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="formADS"/>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="tabCours">
+    <attribute name="title">
+     <string>Cours</string>
+    </attribute>
+    <widget class="QWidget" name="gridLayoutWidget_4">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>751</width>
+       <height>541</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="formCours"/>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="tabInterros">
+    <attribute name="title">
+     <string>Interros</string>
+    </attribute>
+    <widget class="QWidget" name="gridLayoutWidget_5">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>751</width>
+       <height>541</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="formInterros"/>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="tabTD">
+    <attribute name="title">
+     <string>TD</string>
+    </attribute>
+    <widget class="QWidget" name="gridLayoutWidget_6">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>751</width>
+       <height>541</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="formTD"/>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="tabInfo">
+    <attribute name="title">
+     <string>Info</string>
+    </attribute>
+    <widget class="QWidget" name="gridLayoutWidget_7">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>751</width>
+       <height>541</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="formInfo"/>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="tabSlidesInfo">
+    <attribute name="title">
+     <string>SlidesInfo</string>
+    </attribute>
+    <widget class="QWidget" name="gridLayoutWidget_13">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>751</width>
+       <height>541</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="formSlidesInfo"/>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="tabTDInfo">
+    <attribute name="title">
+     <string>TDInfo</string>
+    </attribute>
+    <widget class="QWidget" name="gridLayoutWidget_11">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>751</width>
+       <height>541</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="formTDInfo"/>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="tabTPInfo">
+    <attribute name="title">
+     <string>TPInfo</string>
+    </attribute>
+    <widget class="QWidget" name="gridLayoutWidget_12">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>751</width>
+       <height>541</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="formTPInfo"/>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="tabDSInfo">
+    <attribute name="title">
+     <string>DSInfo</string>
+    </attribute>
+    <widget class="QWidget" name="gridLayoutWidget_14">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>751</width>
+       <height>541</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="formDSInfo"/>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="tabFormulaires">
+    <attribute name="title">
+     <string>Formulaires</string>
+    </attribute>
+    <widget class="QWidget" name="gridLayoutWidget_9">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>751</width>
+       <height>541</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="formFormulaires"/>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="tabAnimations">
+    <attribute name="title">
+     <string>Animations</string>
+    </attribute>
+    <widget class="QWidget" name="gridLayoutWidget_10">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>701</width>
+       <height>541</height>
+      </rect>
+     </property>
+     <layout class="QGridLayout" name="formAnimations"/>
+    </widget>
+    <widget class="QWidget" name="verticalLayoutWidget_2">
+     <property name="geometry">
+      <rect>
+       <x>720</x>
+       <y>10</y>
+       <width>41</width>
+       <height>71</height>
+      </rect>
+     </property>
+     <layout class="QVBoxLayout" name="buttonsAnimations">
+      <property name="spacing">
+       <number>6</number>
+      </property>
+      <item>
+       <widget class="QPushButton" name="addAnimationsButton">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>32</width>
+          <height>32</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="removeAnimationsButton">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>32</width>
+          <height>32</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </widget>
+  </widget>
+  <widget class="QPushButton" name="transferButton">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>600</y>
+     <width>81</width>
+     <height>71</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>64</width>
+     <height>64</height>
+    </size>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
