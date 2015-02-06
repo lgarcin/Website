@@ -28,26 +28,49 @@ def read(filename):
     return s
     
 class EnonceCorrigeWidget(QtGui.QWidget):
-    def __init__(self, enonce, corrige, parent=None):
+    def __init__(self, ec, parent=None):
         super(EnonceCorrigeWidget, self).__init__(parent)
-        transferInfo = self.parent().transferInfo
-        nomWidget = QtGui.QLabel(enonce['nom'])
-        enonceWidget = QtGui.QCheckBox('Enoncé')
-        enonceWidget.stateChanged.connect(lambda state: transferInfo.append(enonce) if state == QtCore.Qt.Checked else transferInfo.remove(enonce))
-        if enonce in self.parent().remoteInfo:
-            enonceWidget.setCheckState(QtCore.Qt.Checked)
-        if not os.path.exists(os.path.join(self.parent().localDir, enonce['path'])):
-            enonceWidget.setDisabled(True)
-        corrigeWidget = QtGui.QCheckBox('Corrigé')
-        corrigeWidget.stateChanged.connect(lambda state: transferInfo.append(corrige) if state == QtCore.Qt.Checked else transferInfo.remove(corrige))
-        if corrige in self.parent().remoteInfo:
-            corrigeWidget.setCheckState(QtCore.Qt.Checked)
-        if not os.path.exists(os.path.join(self.parent().localDir, corrige['path'])):
-            corrigeWidget.setDisabled(True)
+        self.transferInfo = self.parent().transferInfo
+        self.current=ec
+        self.transferInfo.append(ec)
+        self.enonce = ec['enoncepath']
+        self.corrige = ec['corrigepath']
+        nomWidget = QtGui.QLabel(ec['nom'])
+        
+        self.enonceWidget = QtGui.QCheckBox('Enoncé')
+        self.corrigeWidget = QtGui.QCheckBox('Corrigé')
+        self.enonceWidget.stateChanged.connect(self.updateInfo)
+        self.corrigeWidget.stateChanged.connect(self.updateInfo)
+
+        if self.enonce in [e['enoncepath'] for e in self.parent().remoteInfo if 'enoncepath' in e]:
+            self.enonceWidget.setCheckState(QtCore.Qt.Checked)
+        if not os.path.exists(os.path.join(self.parent().localDir, self.enonce)):
+            self.enonceWidget.setDisabled(True)
+            
+        if self.corrige in [c['corrigepath'] for c in self.parent().remoteInfo if 'corrigepath' in c]:
+            self.corrigeWidget.setCheckState(QtCore.Qt.Checked)
+        if not os.path.exists(os.path.join(self.parent().localDir, self.corrige)):
+            self.corrigeWidget.setDisabled(True)
+            
         layout = QtGui.QHBoxLayout(self)
         layout.addWidget(nomWidget)
-        layout.addWidget(enonceWidget)
-        layout.addWidget(corrigeWidget)
+        layout.addWidget(self.enonceWidget)
+        layout.addWidget(self.corrigeWidget)
+        
+    def updateInfo(self):
+        self.transferInfo.remove(self.current)
+        if self.enonceWidget.isChecked():
+            self.current['enoncepath']=self.enonce
+        else:
+            self.current.pop('enoncepath',None)
+        if self.corrigeWidget.isChecked():
+            self.current['corrigepath']=self.corrige
+        else:
+            self.current.pop('corrigepath',None)
+        if 'enoncepath' in self.current or 'corrigepath' in self.current:
+            self.transferInfo.append(self.current)
+            
+        print(self.transferInfo)
 
 class CoursWidget(QtGui.QWidget):
     def __init__(self, cours, parent=None):
@@ -127,8 +150,8 @@ class WebSite(form_class, base_class):
         self.addAnimationsButton.setIcon(QtGui.QIcon(os.path.join(scriptdir, "images/plus_32.ico")))
         self.removeAnimationsButton.setIcon(QtGui.QIcon(os.path.join(scriptdir, "images/delete_32.ico")))
         self.transferButton.setIcon(QtGui.QIcon(os.path.join(scriptdir, "images/ftp_64.png")))
-        self.localDir = "E:/Documents/Enseignement/Corot/"
-        self.remoteDir = "E:/Documents/Enseignement/Test/"
+        self.localDir = "F:/Documents/Enseignement/Corot/"
+        self.remoteDir = "F:/Documents/Enseignement/Test/"
         os.chdir(self.localDir)
         self.transferInfo = []
         self.getLocalInfo()
@@ -136,37 +159,23 @@ class WebSite(form_class, base_class):
         self.getRemoteInfo()
         self.fillForms()
 
-    def ones(self, t):
-        return [e for e in self.localInfo if e['type'] == t]
-
-    def pairs(self, typeEnonce, typeCorrige):
-        enonces = [e for e in self.localInfo if e['type'] == typeEnonce]
-        corriges = [c for c in self.localInfo if c['type'] == typeCorrige]
-        return [(e,c) for e in enonces for c in corriges if e['nom']==c['nom']]
-        
     def getRemoteInfo(self):
         try:
             with self.client.get_file('data.json') as f:
-                self.remoteInfo=json.loads(f.read().decode('utf-8'))
+                self.remoteInfo = json.loads(f.read().decode('utf-8'))
         except:
-            self.remoteInfo=[]
-#         try:
-#             with open(os.path.join(self.remoteDir, "app/data.json"), "r", encoding='utf8') as f:
-#                 self.remoteInfo = json.load(f)
-#         except:
-#             self.remoteInfo = []
+            self.remoteInfo = []
+
             
     def getLocalInfo(self):
         self.localInfo = []
         for name in sorted(os.listdir('DS')):
             if 'DS' in name and os.path.isdir('DS/' + name):
-                self.localInfo.append({'nom':name, 'type':'enonceDS', 'path':'DS/' + name + '/' + name + '.pdf'})
-                self.localInfo.append({'nom':name, 'type':'corrigeDS', 'path':'DS/' + name + '/' + name + '_corrige.pdf'})
+                self.localInfo.append({'nom':name, 'type':'DS', 'enoncepath':'DS/' + name + '/' + name + '.pdf', 'corrigepath':'DS/' + name + '/' + name + '_corrige.pdf'})
                 
         for name in sorted(os.listdir('DM')):
             if 'DM' in name and os.path.isdir('DM/' + name):
-                self.localInfo.append({'nom':name, 'type':'enonceDM', 'path':'DM/' + name + '/' + name + '.pdf'})
-                self.localInfo.append({'nom':name, 'type':'corrigeDM', 'path':'DM/' + name + '/' + name + '_corrige.pdf'})
+                self.localInfo.append({'nom':name, 'type':'DM', 'enoncepath':'DM/' + name + '/' + name + '.pdf', 'corrigepath':'DM/' + name + '/' + name + '_corrige.pdf'})
                 
         for name in sorted(os.listdir('Cours')):
             if  os.path.isdir('Cours/' + name):
@@ -192,8 +201,7 @@ class WebSite(form_class, base_class):
             if  os.path.isdir('TD/' + name):
                 s = read(self.localDir + "TD/" + name + "/" + name + ".tex")
                 titre = re.search(r"\\titretd{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
-                self.localInfo.append({'nom':titre, 'type':'enonceTD', 'path':'TD/' + name + '/' + name + '.pdf'})
-                self.localInfo.append({'nom':titre, 'type':'corrigeTD', 'path':'TD/' + name + '/' + name + '_corrige.pdf'})
+                self.localInfo.append({'nom':titre, 'type':'TD', 'enoncepath':'TD/' + name + '/' + name + '.pdf', 'corrigepath':'TD/' + name + '/' + name + '_corrige.pdf'})
                 
         return
     
@@ -213,20 +221,17 @@ class WebSite(form_class, base_class):
             if  os.path.isdir('TDInfo/' + name):
                 s = read(self.localDir + "TDInfo/" + name + "/" + name + ".tex")
                 titre = re.search(r"\\titretd{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
-                self.localInfo.append({'nom':titre, 'type':'enonceTDInfo', 'path':'TDInfo/' + name + '/' + name + '.pdf'})
-                self.localInfo.append({'nom':titre, 'type':'corrigeTDInfo', 'path':'TDInfo/' + name + '/' + name + '_corrige.pdf'})
+                self.localInfo.append({'nom':titre, 'type':'TDinfo', 'enoncepath':'TDInfo/' + name + '/' + name + '.pdf', 'corrigepath':'TDInfo/' + name + '/' + name + '_corrige.pdf'})
                 
         for name in sorted(os.listdir('TPInfo')):
             if  os.path.isdir('TPInfo/' + name):
                 s = read(self.localDir + "TPInfo/" + name + "/" + name + ".tex")
                 titre = re.search(r"\\titretd{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
-                self.localInfo.append({'nom':titre, 'type':'enonceTPInfo', 'path':'TPInfo/' + name + '/' + name + '.pdf'})
-                self.localInfo.append({'nom':titre, 'type':'corrigeTPInfo', 'path':'TPInfo/' + name + '/' + name + '_corrige.pdf'})
+                self.localInfo.append({'nom':titre, 'type':'TPinfo', 'enoncepath':'TPInfo/' + name + '/' + name + '.pdf', 'corrigepath':'TPInfo/' + name + '/' + name + '_corrige.pdf'})
             
         for name in sorted(os.listdir('DSInfo')):
             if 'DSInfo' in name and os.path.isdir('DSInfo/' + name):
-                self.localInfo.append({'nom':name, 'type':'enonceDSinfo', 'path':'DSInfo/' + name + '/' + name + '.pdf'})
-                self.localInfo.append({'nom':name, 'type':'corrigeDSinfo', 'path':'DSInfo/' + name + '/' + name + '_corrige.pdf'})
+                self.localInfo.append({'nom':name, 'type':'DSinfo', 'enoncepath':'DSInfo/' + name + '/' + name + '.pdf', 'corrigepath':'DSInfo/' + name + '/' + name + '_corrige.pdf'})
                 
 
     def clearForms(self):            
@@ -239,85 +244,64 @@ class WebSite(form_class, base_class):
                         widget.deleteLater()
                     
     def fillForms(self):
-        for enonce, corrige in self.pairs('enonceDS', 'corrigeDS'):
-            self.formDS.addWidget(EnonceCorrigeWidget(enonce, corrige, self))
+        for ds in [e for e in self.localInfo if e['type'] == 'DS']:
+            self.formDS.addWidget(EnonceCorrigeWidget(ds, self))
 
-        for enonce, corrige in self.pairs('enonceDM', 'corrigeDM'):
-            self.formDM.addWidget(EnonceCorrigeWidget(enonce, corrige, self))
+        for dm in [e for e in self.localInfo if e['type'] == 'DM']:
+            self.formDM.addWidget(EnonceCorrigeWidget(dm, self))
         
-        for i, cours in enumerate(self.ones('cours')):
+        for i, cours in enumerate([e for e in self.localInfo if e['type'] == 'cours']):
             self.formCours.addWidget(CoursWidget(cours, self), i / 4, i % 4)
 
-        for i, formulaire in enumerate(self.ones('formulaire')):
+        for i, formulaire in enumerate([e for e in self.localInfo if e['type'] == 'formulaire']):
             self.formFormulaires.addWidget(CoursWidget(formulaire, self), i / 4, i % 4)
 
-        for i, colle in enumerate(self.ones('colle')):
+        for i, colle in enumerate([e for e in self.localInfo if e['type'] == 'colle']):
             self.formColles.addWidget(CoursWidget(colle, self), i / 4, i % 4)
         
-        for i, interro in enumerate(self.ones('interro')):
+        for i, interro in enumerate([e for e in self.localInfo if e['type'] == 'interro']):
             self.formInterros.addWidget(CoursWidget(interro, self), i / 4, i % 4)
 
-        for enonce, corrige in self.pairs('enonceTD', 'corrigeTD'):
-            self.formTD.addWidget(EnonceCorrigeWidget(enonce, corrige, self))
+        for td in [e for e in self.localInfo if e['type'] == 'TD']:
+            self.formTD.addWidget(EnonceCorrigeWidget(td, self))
 
-        for i, info in enumerate(self.ones('info')):
+        for i, info in enumerate([e for e in self.localInfo if e['type'] == 'info']):
             self.formInfo.addWidget(CoursWidget(info, self), i / 4, i % 4)
 
-        for i, slidesinfo in enumerate(self.ones('slidesinfo')):
+        for i, slidesinfo in enumerate([e for e in self.localInfo if e['type'] == 'slidesinfo']):
             self.formSlidesInfo.addWidget(CoursWidget(slidesinfo), i / 4, i % 4)
 
-        for enonce, corrige in self.pairs('enonceTDInfo', 'corrigeTDInfo'):
-            self.formTDInfo.addWidget(EnonceCorrigeWidget(enonce, corrige, self))
+        for tdinfo in [e for e in self.localInfo if e['type'] == 'TDinfo']:
+            self.formTDInfo.addWidget(EnonceCorrigeWidget(tdinfo, self))
 
-        for enonce, corrige in self.pairs('enonceTPInfo', 'corrigeTPInfo'):
-            self.formTPInfo.addWidget(EnonceCorrigeWidget(enonce, corrige, self))
+        for tpinfo in [e for e in self.localInfo if e['type'] == 'TPinfo']:
+            self.formTPInfo.addWidget(EnonceCorrigeWidget(tpinfo, self))
 
-        for enonce, corrige in self.pairs('enonceDSinfo', 'corrigeDSinfo'):
-            self.formDSInfo.addWidget(EnonceCorrigeWidget(enonce, corrige, self))
+        for  dsinfo in [e for e in self.localInfo if e['type'] == 'DSinfo']:
+            self.formDSInfo.addWidget(EnonceCorrigeWidget(dsinfo, self))
             
         for animation in [e for e in self.remoteInfo if e['type'] == 'animation']:
             self.formAnimations.addWidget(AnimationWidget(animation, self))
-            
-        return
 
-        self.populateADS()
-        self.populateAnimations()
-        
+
     def writeTransferInfo(self):
         f = io.StringIO()
         json.dump(self.transferInfo, f)
         self.client.put_file("data.json", f, overwrite=True)
-#         with open(self.remoteDir + "app/data.json", "w", encoding='utf8') as f:
-#             json.dump(self.transferInfo, f);
-#             f.close()
+
             
     def transferFiles(self):
         filesToCopy = [e for e in self.transferInfo if 'path' in e.keys()]
         filesToDelete = [e for e in self.remoteInfo if 'path' in e.keys() and e not in self.transferInfo]
         for e in filesToCopy:
-            f=e['path']
+            f = e['path']
             with open(os.path.join(self.localDir, f), 'rb') as fd:
                 self.client.put_file(os.path.basename(f), fd, overwrite=True)
                 self.message.setDetailedText("Copie de " + os.path.basename(f))
-                #e['lien']=self.client.share(os.path.basename(f))['url']
         for f in filesToDelete:
             self.client.file_delete(os.path.basename(f))
             self.message.setDetailedText("Destruction de " + os.path.basename(f))
-#         for f in filesToCopy:
-#             fullPath = os.path.join(self.remoteDir, "app/" + f)
-#             fullDir = os.path.dirname(fullPath)
-#             if not os.path.exists(fullDir):
-#                 os.makedirs(fullDir)
-#             shutil.copyfile(os.path.join(self.localDir, f), fullPath)
-#         for f in filesToDelete:
-#             fullPath = os.path.join(self.remoteDir, "app/" + f)
-#             fullDir = os.path.dirname(fullPath)
-#             os.remove(fullPath)
-#             try:
-#                 os.rmdir(fullDir)
-#             except:
-#                 pass
-        # # heroku
+
               
     @QtCore.pyqtSlot()
     def on_addADSButton_clicked(self):

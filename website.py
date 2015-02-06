@@ -33,7 +33,7 @@ class WebSite(form_class, base_class):
         self.transferButton.setIcon(QtGui.QIcon(scriptdir + "/images/ftp_64.png"))
         self.saveButton.setIcon(QtGui.QIcon(scriptdir + "/images/save_64.png"))
         self.reloadButton.setIcon(QtGui.QIcon(scriptdir + "/images/reload_64.png"))
-        self.rootdir = "E:/Documents/Enseignement/Corot"
+        self.rootdir = "F:/Documents/Enseignement/Corot"
         os.chdir(self.rootdir)
         self.load()
 
