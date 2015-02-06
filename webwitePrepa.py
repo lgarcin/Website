@@ -10,8 +10,9 @@ Created on 27 nov. 2014
 
 import sys, locale, os, re, json, io
 from PyQt4 import QtGui, QtCore, uic
-# from dropbox import client
 from dropbox.client import DropboxClient
+from datetime import datetime
+from dateutil import parser
 
 scriptdir = os.path.dirname(__file__)
 form_class, base_class = uic.loadUiType(os.path.join(scriptdir, 'websitePrepa.ui'))
@@ -31,7 +32,7 @@ class EnonceCorrigeWidget(QtGui.QWidget):
     def __init__(self, ec, parent=None):
         super(EnonceCorrigeWidget, self).__init__(parent)
         self.transferInfo = self.parent().transferInfo
-        self.current=ec
+        self.current = ec
         self.transferInfo.append(ec)
         self.enonce = ec['enoncepath']
         self.corrige = ec['corrigepath']
@@ -60,17 +61,16 @@ class EnonceCorrigeWidget(QtGui.QWidget):
     def updateInfo(self):
         self.transferInfo.remove(self.current)
         if self.enonceWidget.isChecked():
-            self.current['enoncepath']=self.enonce
+            self.current['enoncepath'] = self.enonce
         else:
-            self.current.pop('enoncepath',None)
+            self.current.pop('enoncepath', None)
         if self.corrigeWidget.isChecked():
-            self.current['corrigepath']=self.corrige
+            self.current['corrigepath'] = self.corrige
         else:
-            self.current.pop('corrigepath',None)
+            self.current.pop('corrigepath', None)
         if 'enoncepath' in self.current or 'corrigepath' in self.current:
             self.transferInfo.append(self.current)
             
-        print(self.transferInfo)
 
 class CoursWidget(QtGui.QWidget):
     def __init__(self, cours, parent=None):
@@ -85,6 +85,7 @@ class CoursWidget(QtGui.QWidget):
         layout = QtGui.QHBoxLayout(self)
         layout.addWidget(coursWidget)
         
+
 class AnimationWidget(QtGui.QWidget):
     def __init__(self, animation, parent=None):
         super(AnimationWidget, self).__init__(parent)
@@ -111,6 +112,7 @@ class AnimationWidget(QtGui.QWidget):
         layout.addWidget(iconWidget)
         layout.addWidget(self.check)
         
+
 class ADSWidget(QtGui.QWidget):
     def __init__(self, ads, parent=None):
         super(ADSWidget, self).__init__(parent)
@@ -291,14 +293,34 @@ class WebSite(form_class, base_class):
 
             
     def transferFiles(self):
-        filesToCopy = [e for e in self.transferInfo if 'path' in e.keys()]
-        filesToDelete = [e for e in self.remoteInfo if 'path' in e.keys() and e not in self.transferInfo]
-        for e in filesToCopy:
-            f = e['path']
+        transferFiles = [e['path'] for e in self.transferInfo if 'path' in e.keys()]
+        transferFiles += [e['enoncepath'] for e in self.transferInfo if 'enoncepath' in e.keys()]
+        transferFiles += [e['corrigepath'] for e in self.transferInfo if 'corrigepath' in e.keys()]
+        
+        remoteFiles = [e['path'] for e in self.remoteInfo if 'path' in e.keys()]
+        remoteFiles += [e['enoncepath'] for e in self.remoteInfo if 'enoncepath' in e.keys()]
+        remoteFiles += [e['corrigepath'] for e in self.remoteInfo if 'corrigepath' in e.keys()]
+
+        copyFiles = [f for f in transferFiles if f not in remoteFiles]
+        updateFiles = [f for f in transferFiles if f in remoteFiles]
+        deleteFiles = [f for f in remoteFiles if f not in transferFiles]
+        
+        for f in copyFiles:
             with open(os.path.join(self.localDir, f), 'rb') as fd:
                 self.client.put_file(os.path.basename(f), fd, overwrite=True)
                 self.message.setDetailedText("Copie de " + os.path.basename(f))
-        for f in filesToDelete:
+                
+        for f in updateFiles:
+            localFile = os.path.join(self.localDir, f)
+            remoteFile = os.path.basename(f)
+            localTime = os.path.getmtime(localFile)
+            remoteTime = self.client.metadata(remoteFile)['modified']
+            if datetime.fromtimestamp(localTime) > parser.parse(remoteTime, ignoretz=True):
+                with open(localFile, 'rb') as fd:
+                    self.client.put_file(os.path.basename(f), fd, overwrite=True)
+                    self.message.setDetailedText("Mise à jour de " + os.path.basename(f))
+                
+        for f in deleteFiles:
             self.client.file_delete(os.path.basename(f))
             self.message.setDetailedText("Destruction de " + os.path.basename(f))
 
