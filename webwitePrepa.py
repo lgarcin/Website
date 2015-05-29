@@ -17,6 +17,7 @@ from dateutil import parser
 scriptdir = os.path.dirname(__file__)
 form_class, base_class = uic.loadUiType(os.path.join(scriptdir, 'websitePrepa.ui'))
 
+
 def read(filename):
     try:
         with open(filename, "r", encoding='utf8') as f:
@@ -27,7 +28,38 @@ def read(filename):
             s = f.read()
             f.close()
     return s
-    
+
+
+class FileWidget(QtGui.QWidget):
+    def __init__(self, fw, parent=None):
+        super(FileWidget, self).__init__(parent)
+        self.transferInfo = self.parent().transferInfo
+        self.fw = fw
+        nomWidget = QtGui.QLabel(fw['type'])
+        self.fileChooserWidget = QtGui.QPushButton()
+        if 'path' in self.fw:
+            self.fileChooserWidget.setText(fw['path'])
+            self.transferInfo.append(self.fw)
+        else:
+            self.fileChooserWidget.setText('Choisir un fichier...')
+        self.fileChooserWidget.clicked.connect(self.selectFile)
+        layout = QtGui.QHBoxLayout(self)
+        layout.addWidget(nomWidget)
+        layout.addWidget(self.fileChooserWidget)
+
+    def selectFile(self):
+        fname = QtGui.QFileDialog.getOpenFileName(self, 'Choisir un fichier...')
+        if fname:
+            self.fileChooserWidget.setText(fname)
+            if self.fw not in self.transferInfo:
+                self.transferInfo.append(self.fw)
+            self.fw.update({'path': fname})
+        else:
+            self.fileChooserWidget.setText('Choisir un fichier...')
+            if self.fw in self.transferInfo:
+                self.transferInfo.remove(self.fw)
+
+
 class EnonceCorrigeWidget(QtGui.QWidget):
     def __init__(self, ec, parent=None):
         super(EnonceCorrigeWidget, self).__init__(parent)
@@ -37,7 +69,7 @@ class EnonceCorrigeWidget(QtGui.QWidget):
         self.enonce = ec['enoncepath']
         self.corrige = ec['corrigepath']
         nomWidget = QtGui.QLabel(ec['nom'])
-        
+
         self.enonceWidget = QtGui.QCheckBox('Enoncé')
         self.corrigeWidget = QtGui.QCheckBox('Corrigé')
         self.enonceWidget.stateChanged.connect(self.updateInfo)
@@ -47,17 +79,17 @@ class EnonceCorrigeWidget(QtGui.QWidget):
             self.enonceWidget.setCheckState(QtCore.Qt.Checked)
         if not os.path.exists(os.path.join(self.parent().localDir, self.enonce)):
             self.enonceWidget.setDisabled(True)
-            
+
         if self.corrige in [c['corrigepath'] for c in self.parent().remoteInfo if 'corrigepath' in c]:
             self.corrigeWidget.setCheckState(QtCore.Qt.Checked)
         if not os.path.exists(os.path.join(self.parent().localDir, self.corrige)):
             self.corrigeWidget.setDisabled(True)
-            
+
         layout = QtGui.QHBoxLayout(self)
         layout.addWidget(nomWidget)
         layout.addWidget(self.enonceWidget)
         layout.addWidget(self.corrigeWidget)
-        
+
     def updateInfo(self):
         self.transferInfo.remove(self.current)
         if self.enonceWidget.isChecked():
@@ -70,32 +102,33 @@ class EnonceCorrigeWidget(QtGui.QWidget):
             self.current.pop('corrigepath', None)
         if 'enoncepath' in self.current or 'corrigepath' in self.current:
             self.transferInfo.append(self.current)
-            
+
 
 class CoursWidget(QtGui.QWidget):
     def __init__(self, cours, parent=None):
         super(CoursWidget, self).__init__(parent)
         transferInfo = self.parent().transferInfo
         coursWidget = QtGui.QCheckBox(cours['nom'])
-        coursWidget.stateChanged.connect(lambda state: transferInfo.append(cours) if state == QtCore.Qt.Checked else transferInfo.remove(cours))
+        coursWidget.stateChanged.connect(
+            lambda state: transferInfo.append(cours) if state == QtCore.Qt.Checked else transferInfo.remove(cours))
         if cours in self.parent().remoteInfo:
             coursWidget.setCheckState(QtCore.Qt.Checked)
         if not os.path.exists(os.path.join(self.parent().localDir, cours['path'])):
             coursWidget.setDisabled(True)
         layout = QtGui.QHBoxLayout(self)
         layout.addWidget(coursWidget)
-        
+
 
 class AnimationWidget(QtGui.QWidget):
     def __init__(self, animation, parent=None):
         super(AnimationWidget, self).__init__(parent)
         transferInfo = self.parent().transferInfo
         transferInfo.append(animation)
-        self.destroyed.connect(lambda _:transferInfo.remove(animation))
+        self.destroyed.connect(lambda _: transferInfo.remove(animation))
         nomWidget = QtGui.QLineEdit(animation['nom'])
         nomWidget.home(True)
         nomWidget.deselect()
-        nomWidget.textChanged.connect(lambda text, animation=animation: animation.update({'nom': text}))            
+        nomWidget.textChanged.connect(lambda text, animation=animation: animation.update({'nom': text}))
         lienWidget = QtGui.QLineEdit(animation['lien'])
         lienWidget.home(True)
         lienWidget.deselect()
@@ -111,29 +144,30 @@ class AnimationWidget(QtGui.QWidget):
         layout.addWidget(lienWidget)
         layout.addWidget(iconWidget)
         layout.addWidget(self.check)
-        
+
 
 class ADSWidget(QtGui.QWidget):
     def __init__(self, ads, parent=None):
         super(ADSWidget, self).__init__(parent)
         transferInfo = self.parent().transferInfo
         transferInfo.append(ads)
-        self.destroyed.connect(lambda _:transferInfo.remove(ads))
+        self.destroyed.connect(lambda _: transferInfo.remove(ads))
         nomWidget = QtGui.QLineEdit(ads['nom'])
         nomWidget.home(True)
         nomWidget.deselect()
-        nomWidget.textChanged.connect(lambda text, ads=ads: ads.update({'nom': text}))            
+        nomWidget.textChanged.connect(lambda text, ads=ads: ads.update({'nom': text}))
         eleveWidget = QtGui.QLineEdit(ads['eleve'])
         eleveWidget.home(True)
         eleveWidget.deselect()
         eleveWidget.textChanged.connect(lambda text, ads=ads: ads.update({'eleve': text}))
         dateWidget = QtGui.QDateTimeEdit(QtCore.QDate.fromString(ads['date'], format=QtCore.Qt.DefaultLocaleLongDate))
         dateWidget.setCalendarPopup(True)
-        dateWidget.dateChanged.connect(lambda date, ads=ads: ads.update({'date':date.toString(QtCore.Qt.DefaultLocaleLongDate)}))
+        dateWidget.dateChanged.connect(
+            lambda date, ads=ads: ads.update({'date': date.toString(QtCore.Qt.DefaultLocaleLongDate)}))
         fileWidget = QtGui.QComboBox()
         fileWidget.addItems(os.listdir('ADS'))
-        fileWidget.setCurrentIndex(fileWidget.findText(ads['fichier']))
-        fileWidget.currentIndexChanged.connect(lambda text, ads=ads: ads.update({'fichier':text}))
+        fileWidget.setCurrentIndex(fileWidget.findText(ads['path']))
+        fileWidget.currentIndexChanged.connect(lambda text, ads=ads: ads.update({'path': text}))
         self.check = QtGui.QCheckBox()
         layout = QtGui.QHBoxLayout(self)
         layout.addWidget(nomWidget)
@@ -141,8 +175,8 @@ class ADSWidget(QtGui.QWidget):
         layout.addWidget(dateWidget)
         layout.addWidget(fileWidget)
         layout.addWidget(self.check)
-        
-        
+
+
 class WebSite(form_class, base_class):
     def __init__(self, parent=None):
         super(WebSite, self).__init__(parent)
@@ -168,90 +202,116 @@ class WebSite(form_class, base_class):
         except:
             self.remoteInfo = []
 
-            
     def getLocalInfo(self):
         self.localInfo = []
         for name in sorted(os.listdir('DS')):
             if 'DS' in name and os.path.isdir('DS/' + name):
-                self.localInfo.append({'nom':name, 'type':'DS', 'enoncepath':'DS/' + name + '/' + name + '.pdf', 'corrigepath':'DS/' + name + '/' + name + '_corrige.pdf'})
-                
+                self.localInfo.append({'nom': name, 'type': 'DS', 'enoncepath': 'DS/' + name + '/' + name + '.pdf',
+                                       'corrigepath': 'DS/' + name + '/' + name + '_corrige.pdf'})
+
         for name in sorted(os.listdir('DM')):
             if 'DM' in name and os.path.isdir('DM/' + name):
-                self.localInfo.append({'nom':name, 'type':'DM', 'enoncepath':'DM/' + name + '/' + name + '.pdf', 'corrigepath':'DM/' + name + '/' + name + '_corrige.pdf'})
-                
+                self.localInfo.append({'nom': name, 'type': 'DM', 'enoncepath': 'DM/' + name + '/' + name + '.pdf',
+                                       'corrigepath': 'DM/' + name + '/' + name + '_corrige.pdf'})
+
         for name in sorted(os.listdir('Cours')):
-            if  os.path.isdir('Cours/' + name):
+            if os.path.isdir('Cours/' + name):
                 s = read(self.localDir + "Cours/" + name + "/" + name + ".tex");
                 titre = re.search(r"\\titrecours{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
-                self.localInfo.append({'nom':titre, 'type':'cours', 'path':'Cours/' + name + '/' + name + '.pdf'})
-                
+                self.localInfo.append({'nom': titre, 'type': 'cours', 'path': 'Cours/' + name + '/' + name + '.pdf'})
+
         for name in sorted(os.listdir('Formulaires')):
-            if  os.path.isdir('Formulaires/' + name):
+            if os.path.isdir('Formulaires/' + name):
                 s = read(self.localDir + "Formulaires/" + name + "/" + name + ".tex");
                 titre = re.search(r"\\titreformulaire{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
-                self.localInfo.append({'nom':titre, 'type':'formulaire', 'path':'Formulaires/' + name + '/' + name + '.pdf'})
+                self.localInfo.append(
+                    {'nom': titre, 'type': 'formulaire', 'path': 'Formulaires/' + name + '/' + name + '.pdf'})
 
         for name in sorted(os.listdir('Colles')):
             if 'ProgColles' in name and os.path.isdir('Colles/' + name):
-                self.localInfo.append({'nom':name, 'type':'colle', 'path':'Colles/' + name + '/' + name + '.pdf'})
+                self.localInfo.append({'nom': name, 'type': 'colle', 'path': 'Colles/' + name + '/' + name + '.pdf'})
 
         for name in sorted(os.listdir('Interros')):
             if 'Interro' in name and os.path.isdir('Interros/' + name):
-                self.localInfo.append({'nom':name, 'type':'interro', 'path':'Interros/' + name + '/' + name + '.pdf'})
-                
+                self.localInfo.append(
+                    {'nom': name, 'type': 'interro', 'path': 'Interros/' + name + '/' + name + '.pdf'})
+
         for name in sorted(os.listdir('TD')):
-            if  os.path.isdir('TD/' + name):
+            if os.path.isdir('TD/' + name):
                 s = read(self.localDir + "TD/" + name + "/" + name + ".tex")
                 titre = re.search(r"\\titretd{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
-                self.localInfo.append({'nom':titre, 'type':'TD', 'enoncepath':'TD/' + name + '/' + name + '.pdf', 'corrigepath':'TD/' + name + '/' + name + '_corrige.pdf'})
-                
+                self.localInfo.append({'nom': titre, 'type': 'TD', 'enoncepath': 'TD/' + name + '/' + name + '.pdf',
+                                       'corrigepath': 'TD/' + name + '/' + name + '_corrige.pdf'})
+
         return
-    
+
         for name in sorted(os.listdir('Info')):
-            if  os.path.isdir('Info/' + name):
+            if os.path.isdir('Info/' + name):
                 s = read(self.localDir + "Info/" + name + "/" + name + ".tex");
                 titre = re.search(r"\\titrecours{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
-                self.localInfo.append({'nom':titre, 'type':'info', 'path':'Info/' + name + '/' + name + '.pdf'})
-                
+                self.localInfo.append({'nom': titre, 'type': 'info', 'path': 'Info/' + name + '/' + name + '.pdf'})
+
         for name in sorted(os.listdir('SlidesInfo')):
-            if  os.path.isdir('SlidesInfo/' + name):
+            if os.path.isdir('SlidesInfo/' + name):
                 s = read(self.localDir + "SlidesInfo/" + name + "/" + name + ".tex");
                 titre = re.search(r"\\title{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
-                self.localInfo.append({'nom':titre, 'type':'slidesinfo', 'path':'SlidesInfo/' + name + '/' + name + '.pdf'})
-                
+                self.localInfo.append(
+                    {'nom': titre, 'type': 'slidesinfo', 'path': 'SlidesInfo/' + name + '/' + name + '.pdf'})
+
         for name in sorted(os.listdir('TDInfo')):
-            if  os.path.isdir('TDInfo/' + name):
+            if os.path.isdir('TDInfo/' + name):
                 s = read(self.localDir + "TDInfo/" + name + "/" + name + ".tex")
                 titre = re.search(r"\\titretd{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
-                self.localInfo.append({'nom':titre, 'type':'TDinfo', 'enoncepath':'TDInfo/' + name + '/' + name + '.pdf', 'corrigepath':'TDInfo/' + name + '/' + name + '_corrige.pdf'})
-                
+                self.localInfo.append(
+                    {'nom': titre, 'type': 'TDinfo', 'enoncepath': 'TDInfo/' + name + '/' + name + '.pdf',
+                     'corrigepath': 'TDInfo/' + name + '/' + name + '_corrige.pdf'})
+
         for name in sorted(os.listdir('TPInfo')):
-            if  os.path.isdir('TPInfo/' + name):
+            if os.path.isdir('TPInfo/' + name):
                 s = read(self.localDir + "TPInfo/" + name + "/" + name + ".tex")
                 titre = re.search(r"\\titretd{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
-                self.localInfo.append({'nom':titre, 'type':'TPinfo', 'enoncepath':'TPInfo/' + name + '/' + name + '.pdf', 'corrigepath':'TPInfo/' + name + '/' + name + '_corrige.pdf'})
-            
+                self.localInfo.append(
+                    {'nom': titre, 'type': 'TPinfo', 'enoncepath': 'TPInfo/' + name + '/' + name + '.pdf',
+                     'corrigepath': 'TPInfo/' + name + '/' + name + '_corrige.pdf'})
+
         for name in sorted(os.listdir('DSInfo')):
             if 'DSInfo' in name and os.path.isdir('DSInfo/' + name):
-                self.localInfo.append({'nom':name, 'type':'DSinfo', 'enoncepath':'DSInfo/' + name + '/' + name + '.pdf', 'corrigepath':'DSInfo/' + name + '/' + name + '_corrige.pdf'})
-                
+                self.localInfo.append(
+                    {'nom': name, 'type': 'DSinfo', 'enoncepath': 'DSInfo/' + name + '/' + name + '.pdf',
+                     'corrigepath': 'DSInfo/' + name + '/' + name + '_corrige.pdf'})
 
-    def clearForms(self):            
-        for form in (self.formDS, self.formDM, self.formColles, self.formCours, self.formInterros, self.formTD, self.formInfo, self.formTDInfo, self.formTPInfo, self.formADS, self.formFormulaires):
+    def clearForms(self):
+        for form in (
+                self.formDS, self.formDM, self.formColles, self.formCours, self.formInterros, self.formTD,
+                self.formInfo,
+                self.formTDInfo, self.formTPInfo, self.formADS, self.formFormulaires):
             if form is not None:
                 while form.count():
                     item = form.takeAt(0)
                     widget = item.widget()
                     if widget is not None:
                         widget.deleteLater()
-                    
+
     def fillForms(self):
+        n = next((item for item in self.remoteInfo if item['type'] == 'Colloscope'), {'type': 'Colloscope'})
+        self.formVieclasse.addWidget(FileWidget(n.copy(), self))
+        n = next((item for item in self.remoteInfo if item['type'] == 'Emploi du temps'), {'type': 'Emploi du temps'})
+        self.formVieclasse.addWidget(FileWidget(n.copy(), self))
+        n = next((item for item in self.remoteInfo if item['type'] == 'Planning des DS'), {'type': 'Planning des DS'})
+        self.formVieclasse.addWidget(FileWidget(n.copy(), self))
+        n = next((item for item in self.remoteInfo if item['type'] == 'Notes premier semestre'),
+                 {'type': 'Notes premier semestre'})
+        self.formVieclasse.addWidget(FileWidget(n.copy(), self))
+        n = next((item for item in self.remoteInfo if item['type'] == 'Notes second semestre'),
+                 {'type': 'Notes second semestre'})
+        self.formVieclasse.addWidget(FileWidget(n.copy(), self))
+
         for ds in [e for e in self.localInfo if e['type'] == 'DS']:
             self.formDS.addWidget(EnonceCorrigeWidget(ds, self))
 
         for dm in [e for e in self.localInfo if e['type'] == 'DM']:
             self.formDM.addWidget(EnonceCorrigeWidget(dm, self))
-        
+
         for i, cours in enumerate([e for e in self.localInfo if e['type'] == 'cours']):
             self.formCours.addWidget(CoursWidget(cours, self), i / 4, i % 4)
 
@@ -260,7 +320,7 @@ class WebSite(form_class, base_class):
 
         for i, colle in enumerate([e for e in self.localInfo if e['type'] == 'colle']):
             self.formColles.addWidget(CoursWidget(colle, self), i / 4, i % 4)
-        
+
         for i, interro in enumerate([e for e in self.localInfo if e['type'] == 'interro']):
             self.formInterros.addWidget(CoursWidget(interro, self), i / 4, i % 4)
 
@@ -279,55 +339,19 @@ class WebSite(form_class, base_class):
         for tpinfo in [e for e in self.localInfo if e['type'] == 'TPinfo']:
             self.formTPInfo.addWidget(EnonceCorrigeWidget(tpinfo, self))
 
-        for  dsinfo in [e for e in self.localInfo if e['type'] == 'DSinfo']:
+        for dsinfo in [e for e in self.localInfo if e['type'] == 'DSinfo']:
             self.formDSInfo.addWidget(EnonceCorrigeWidget(dsinfo, self))
-            
+
         for animation in [e for e in self.remoteInfo if e['type'] == 'animation']:
             self.formAnimations.addWidget(AnimationWidget(animation, self))
 
+    def updateMessage(self, mess):
+        self.detailedMessage += mess + '\n'
+        self.message.setDetailedText(self.detailedMessage)
 
-    def writeTransferInfo(self):
-        f = io.StringIO()
-        json.dump(self.transferInfo, f)
-        self.client.put_file("data.json", f, overwrite=True)
-
-            
-    def transferFiles(self):
-        transferFiles = [e['path'] for e in self.transferInfo if 'path' in e.keys()]
-        transferFiles += [e['enoncepath'] for e in self.transferInfo if 'enoncepath' in e.keys()]
-        transferFiles += [e['corrigepath'] for e in self.transferInfo if 'corrigepath' in e.keys()]
-        
-        remoteFiles = [e['path'] for e in self.remoteInfo if 'path' in e.keys()]
-        remoteFiles += [e['enoncepath'] for e in self.remoteInfo if 'enoncepath' in e.keys()]
-        remoteFiles += [e['corrigepath'] for e in self.remoteInfo if 'corrigepath' in e.keys()]
-
-        copyFiles = [f for f in transferFiles if f not in remoteFiles]
-        updateFiles = [f for f in transferFiles if f in remoteFiles]
-        deleteFiles = [f for f in remoteFiles if f not in transferFiles]
-        
-        for f in copyFiles:
-            with open(os.path.join(self.localDir, f), 'rb') as fd:
-                self.client.put_file(os.path.basename(f), fd, overwrite=True)
-                self.message.setDetailedText("Copie de " + os.path.basename(f))
-                
-        for f in updateFiles:
-            localFile = os.path.join(self.localDir, f)
-            remoteFile = os.path.basename(f)
-            localTime = os.path.getmtime(localFile)
-            remoteTime = self.client.metadata(remoteFile)['modified']
-            if datetime.fromtimestamp(localTime) > parser.parse(remoteTime, ignoretz=True):
-                with open(localFile, 'rb') as fd:
-                    self.client.put_file(os.path.basename(f), fd, overwrite=True)
-                    self.message.setDetailedText("Mise à jour de " + os.path.basename(f))
-                
-        for f in deleteFiles:
-            self.client.file_delete(os.path.basename(f))
-            self.message.setDetailedText("Destruction de " + os.path.basename(f))
-
-              
     @QtCore.pyqtSlot()
     def on_addADSButton_clicked(self):
-        ads = {'nom':'', 'eleve':'', 'type':'ads', 'date':'', 'fichier':''}
+        ads = {'nom': '', 'eleve': '', 'type': 'ads', 'date': '', 'path': ''}
         self.formADS.addWidget(ADSWidget(ads, self))
 
     @QtCore.pyqtSlot()
@@ -337,10 +361,10 @@ class WebSite(form_class, base_class):
                 self.formADS.removeWidget(widget)
                 widget.deleteLater()
                 self.formADS.update()
-            
+
     @QtCore.pyqtSlot()
     def on_addAnimationsButton_clicked(self):
-        animation = {'nom':'', 'lien':'', 'type':'animation', 'icon':''}
+        animation = {'nom': '', 'lien': '', 'type': 'animation', 'icon': ''}
         self.formAnimations.addWidget(AnimationWidget(animation, self))
 
     @QtCore.pyqtSlot()
@@ -353,13 +377,72 @@ class WebSite(form_class, base_class):
 
     @QtCore.pyqtSlot()
     def on_transferButton_clicked(self):
-        self.message = QtGui.QMessageBox(QtGui.QMessageBox.Information, "Sauvegarde", "Sauvegarde", QtGui.QMessageBox.Cancel)
-        self.message.setInformativeText("Sauvegarde en cours")
+        self.message = QtGui.QMessageBox(QtGui.QMessageBox.Information, "Transfert", "Transfert",
+                                         QtGui.QMessageBox.Cancel)
+        spacer = QtGui.QSpacerItem(500, 0, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        l = self.message.layout()
+        l.addItem(spacer, l.rowCount(), 0, 1, l.columnCount())
+        self.detailedMessage = 'Début du transfert\n'
+        self.message.setDetailedText(self.detailedMessage)
         self.message.show()
-        self.transferFiles()
-        self.writeTransferInfo()
-        self.message.setInformativeText("Sauvegarde terminée")
-                
+
+        transferFiles = [e['path'] for e in self.transferInfo if 'path' in e.keys()]
+        transferFiles += [e['enoncepath'] for e in self.transferInfo if 'enoncepath' in e.keys()]
+        transferFiles += [e['corrigepath'] for e in self.transferInfo if 'corrigepath' in e.keys()]
+
+        remoteFiles = [e['path'] for e in self.remoteInfo if 'path' in e.keys()]
+        remoteFiles += [e['enoncepath'] for e in self.remoteInfo if 'enoncepath' in e.keys()]
+        remoteFiles += [e['corrigepath'] for e in self.remoteInfo if 'corrigepath' in e.keys()]
+
+        copyFiles = [f for f in transferFiles if f not in remoteFiles]
+        updateFiles = [f for f in transferFiles if f in remoteFiles]
+        deleteFiles = [f for f in remoteFiles if f not in transferFiles]
+
+        self.thread = TransferThread(self.client, self.localDir, copyFiles, updateFiles, deleteFiles, self.transferInfo)
+        self.thread.start()
+        self.thread.message.connect(self.updateMessage)
+
+
+class TransferThread(QtCore.QThread):
+    message = QtCore.pyqtSignal(str)
+
+    def __init__(self, client, localDir, copyFiles, updateFiles, deleteFiles, transferInfo, parent=None):
+        super(TransferThread, self).__init__(parent)
+        self.client = client
+        self.localDir = localDir
+        self.copyFiles = copyFiles
+        self.updateFiles = updateFiles
+        self.deleteFiles = deleteFiles
+        self.transferInfo = transferInfo
+
+    def run(self):
+        for f in self.copyFiles:
+            with open(os.path.join(self.localDir, f), 'rb') as fd:
+                self.client.put_file(os.path.basename(f), fd, overwrite=True)
+                self.message.emit("Copie de " + os.path.basename(f))
+
+        for f in self.updateFiles:
+            localFile = os.path.join(self.localDir, f)
+            remoteFile = os.path.basename(f)
+            localTime = os.path.getmtime(localFile)
+            remoteTime = self.client.metadata(remoteFile)['modified']
+            if datetime.fromtimestamp(localTime) > parser.parse(remoteTime, ignoretz=True):
+                with open(localFile, 'rb') as fd:
+                    self.client.put_file(os.path.basename(f), fd, overwrite=True)
+                    self.message.emit("Mise à jour de " + os.path.basename(f))
+
+        for f in self.deleteFiles:
+            self.client.file_delete(os.path.basename(f))
+            self.message.emit("Destruction de " + os.path.basename(f))
+
+        f = io.StringIO()
+        json.dump(self.transferInfo, f)
+        self.client.put_file("data.json", f, overwrite=True)
+        self.message.emit("Copie du fichier JSON")
+
+        self.message.emit("Transfert terminé")
+
+
 if __name__ == '__main__':
     locale.setlocale(locale.LC_ALL, '')
     app = QtGui.QApplication(sys.argv)
