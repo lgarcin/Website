@@ -216,13 +216,13 @@ class WebSite(form_class, base_class):
 
         for name in sorted(os.listdir('Cours')):
             if os.path.isdir('Cours/' + name):
-                s = read(self.localDir + "Cours/" + name + "/" + name + ".tex");
+                s = read(self.localDir + "Cours/" + name + "/" + name + ".tex")
                 titre = re.search(r"\\titrecours{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
                 self.localInfo.append({'nom': titre, 'type': 'cours', 'path': 'Cours/' + name + '/' + name + '.pdf'})
 
         for name in sorted(os.listdir('Formulaires')):
             if os.path.isdir('Formulaires/' + name):
-                s = read(self.localDir + "Formulaires/" + name + "/" + name + ".tex");
+                s = read(self.localDir + "Formulaires/" + name + "/" + name + ".tex")
                 titre = re.search(r"\\titreformulaire{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
                 self.localInfo.append(
                     {'nom': titre, 'type': 'formulaire', 'path': 'Formulaires/' + name + '/' + name + '.pdf'})

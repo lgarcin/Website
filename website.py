@@ -201,7 +201,7 @@ class WebSite(form_class, base_class):
 
     def ftpCommandStarted(self, i):
         if self.ftp.currentCommand() == QtNetwork.QFtp.List:
-            self.currentPath = self.pendingPaths.pop(0);
+            self.currentPath = self.pendingPaths.pop(0)
 
     def ftpDone(self, error):
         if self.ftp.state() == QtNetwork.QFtp.Unconnected:
@@ -313,7 +313,7 @@ class WebSite(form_class, base_class):
         i = 0
         for name in os.listdir('Cours'):
             if os.path.isdir('Cours/' + name):
-                s = read(self.rootdir + "/Cours/" + name + "/" + name + ".tex");
+                s = read(self.rootdir + "/Cours/" + name + "/" + name + ".tex")
                 titre = re.search(r"\\titrecours{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
                 checkbox = QtGui.QCheckBox(titre)
                 path = 'Cours/' + name + '/' + name + '.pdf'
@@ -370,7 +370,7 @@ class WebSite(form_class, base_class):
         i = 0
         for name in os.listdir('Informatique'):
             if os.path.isdir('Informatique/' + name):
-                s = read(self.rootdir + "/Informatique/" + name + "/" + name + ".tex");
+                s = read(self.rootdir + "/Informatique/" + name + "/" + name + ".tex")
                 titre = re.search(r"\\titrecours{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
                 checkbox = QtGui.QCheckBox(titre)
                 path = 'Informatique/' + name + '/' + name + '.pdf'
@@ -388,7 +388,7 @@ class WebSite(form_class, base_class):
         i = 0
         for name in os.listdir('SlidesInfo'):
             if os.path.isdir('SlidesInfo/' + name):
-                s = read(self.rootdir + "/SlidesInfo/" + name + "/" + name + ".tex");
+                s = read(self.rootdir + "/SlidesInfo/" + name + "/" + name + ".tex")
                 titre = re.search(r"\\title{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
                 checkbox = QtGui.QCheckBox(titre)
                 path = 'SlidesInfo/' + name + '/' + name + '.pdf'

@@ -5,7 +5,7 @@ from PyQt4 import QtGui, QtCore, uic
 from datetime import datetime
 from dateutil import parser
 from pymongo import MongoClient
-import gridfs
+from bson.binary import Binary
 
 script_directory = os.path.dirname(__file__)
 form_class, base_class = uic.loadUiType(os.path.join(script_directory, 'websiteMPSI.ui'))
@@ -13,16 +13,17 @@ form_class, base_class = uic.loadUiType(os.path.join(script_directory, 'websiteM
 client = MongoClient('ds039351.mongolab.com:39351')
 db = client.websiteprepa
 db.authenticate('lgarcin', 'ua$hu~ka77')
-fs = gridfs.GridFS(db)
+
 
 class FileWidget(QtGui.QGroupBox):
-    def __init__(self, file_dict, parent=None):
+    def __init__(self, file_dict, collection, parent=None):
         super(FileWidget, self).__init__(file_dict['name'], parent)
         self.file_dict = file_dict
+        self.collection = collection
         self.fileChooserWidget = QtGui.QPushButton()
-        file = fs.find_one({'type': file_dict['type']})
-        if file:
-            file_dict['filename'] = file['filename']
+        q = collection.find_one({'name': file_dict['name']})
+        if q:
+            file_dict['filename'] = q['filename']
         if 'filename' in file_dict:
             self.fileChooserWidget.setText(file_dict['filename'])
         else:
@@ -35,42 +36,50 @@ class FileWidget(QtGui.QGroupBox):
         filename = QtGui.QFileDialog.getOpenFileName(self, 'Choisir un fichier...')
         if filename:
             self.fileChooserWidget.setText(filename)
-            self.file_dict.update({'filename': filename})
             f = open(filename, mode='rb')
-            fs.put(f, content_type='application/pdf', filename='colloscope.pdf')
+            self.file_dict.update({'filename': filename, 'file': Binary(f.read()), 'date': os.path.getmtime(filename)})
+            self.collection.update_one({'name': self.file_dict['name']}, {'$set': self.file_dict}, upsert=True)
         else:
             self.fileChooserWidget.setText('Choisir un fichier...')
 
 
 class CheckWidget(QtGui.QWidget):
-    def __init__(self, file_dict, parent=None):
+    def __init__(self, file_dict, collection, parent=None):
         super(CheckWidget, self).__init__(parent)
         self.file_dict = file_dict
+        self.collection = collection
+        f = open(self.file_dict['filename'], mode='rb')
+        self.file_dict.update({'file': Binary(f.read()), 'date': os.path.getmtime(self.file_dict['filename'])})
         checkbox_widget = QtGui.QCheckBox(file_dict['subtype'] if 'subtype' in file_dict else file_dict['name'])
-        file_dict['to_upload'] = False
-        checkbox_widget.stateChanged.connect(
-            lambda state: file_dict.update({'to_upload': state == QtCore.Qt.Checked}))
-        if 'filename' in file_dict and fs.exists({'filename': file_dict['filename']}):
+        checkbox_widget.stateChanged.connect(self.update)
+        if self.collection.find_one({'filename': file_dict['filename']}):
             checkbox_widget.setCheckState(QtCore.Qt.Checked)
-        if 'missing' in file_dict:
+        if not os.path.exists(file_dict['filename']):
             checkbox_widget.setDisabled(True)
         layout = QtGui.QHBoxLayout(self)
         layout.addWidget(checkbox_widget)
 
+    def update(self, state):
+        if state == QtCore.Qt.Checked:
+            self.collection.update_one({'name': self.file_dict['name']}, {'$set': self.file_dict}, upsert=True)
+        else:
+            self.collection.delete_one(self.file_dict)
+
 
 class MultipleCheckWidget(QtGui.QGroupBox):
-    def __init__(self, name, file_dict_list, parent=None):
+    def __init__(self, name, file_dict_list, collection, parent=None):
         super(MultipleCheckWidget, self).__init__(name, parent)
-        check_widgets = [CheckWidget(file_dict) for file_dict in file_dict_list]
+        check_widgets = [CheckWidget(file_dict, collection) for file_dict in file_dict_list]
         layout = QtGui.QHBoxLayout(self)
         for check_widget in check_widgets:
             layout.addWidget(check_widget)
 
 
 class LinkWidget(QtGui.QWidget):
-    def __init__(self, link_dict, parent=None):
+    def __init__(self, link_dict, collection, parent=None):
         super(LinkWidget, self).__init__(parent)
         self.link_dict = link_dict
+        self.collection = collection
         name_widget = QtGui.QLineEdit(link_dict['name'])
         name_widget.home(True)
         name_widget.deselect()
@@ -93,8 +102,9 @@ class LinkWidget(QtGui.QWidget):
 
 
 class ScheduleWidget(QtGui.QWidget):
-    def __init__(self, schedule_dict, parent=None):
+    def __init__(self, schedule_dict, collection, parent=None):
         super(ScheduleWidget, self).__init__(parent)
+        self.collection = collection
         name_widget = QtGui.QLineEdit(schedule_dict['name'])
         name_widget.home(True)
         name_widget.deselect()
@@ -139,22 +149,22 @@ class WebSite(form_class, base_class):
 
     def fill_forms(self):
         for name in ('Colloscope', 'Emploi du temps', 'Planning des DS'):
-            self.formVieClasse.addWidget(FileWidget({'name': name, 'type': 'vieclasse'}, self))
+            self.formVieClasse.addWidget(FileWidget({'name': name}, db.vieclasse, self))
         i = 0
         for name in sorted(os.listdir('DS')):
             if 'DS' in name and os.path.isdir('DS/' + name):
                 self.formDS.addWidget(MultipleCheckWidget(name, [
-                    {'name': name, 'type': 'ds', 'subtype': 'enonce', 'filename': name + '/' + name + '.pdf'},
-                    {'name': name, 'type': 'ds', 'subtype': 'corrige',
-                     'filename': name + '/' + name + '_corrige.pdf'}]), i / 2, i % 2)
+                    {'name': name, 'subtype': 'enonce', 'filename': 'DS/' + name + '/' + name + '.pdf'},
+                    {'name': name, 'subtype': 'corrige',
+                     'filename': 'DS/' + name + '/' + name + '_corrige.pdf'}], db.ds), i / 2, i % 2)
                 i += 1
         i = 0
         for name in sorted(os.listdir('DM')):
             if 'DM' in name and os.path.isdir('DM/' + name):
                 self.formDM.addWidget(MultipleCheckWidget(name, [
-                    {'name': name, 'type': 'dm', 'subtype': 'enonce', 'filename': name + '/' + name + '.pdf'},
-                    {'name': name, 'type': 'dm', 'subtype': 'corrige',
-                     'filename': name + '/' + name + '_corrige.pdf'}]), i / 2, i % 2)
+                    {'name': name, 'subtype': 'enonce', 'filename': 'DM/' + name + '/' + name + '.pdf'},
+                    {'name': name, 'subtype': 'corrige',
+                     'filename': 'DM/' + name + '/' + name + '_corrige.pdf'}], db.dm), i / 2, i % 2)
                 i += 1
         i = 0
         for name in sorted(os.listdir('Cours')):
@@ -164,7 +174,8 @@ class WebSite(form_class, base_class):
                 f.close()
                 titre = re.search(r'\\titrecours{(.*?)}', s, re.DOTALL).group(1).replace('\\\\', ' ')
                 self.formCours.addWidget(
-                    CheckWidget({'name': titre, 'type': 'cours', 'filename': name + '/' + name + '.pdf'}), i / 4, i % 4)
+                    CheckWidget({'name': titre, 'filename': 'Cours/' + name + '/' + name + '.pdf'}, db.cours),
+                    i / 4, i % 4)
                 i += 1
         i = 0
         for name in sorted(os.listdir('Formulaires')):
@@ -174,22 +185,23 @@ class WebSite(form_class, base_class):
                 f.close()
                 titre = re.search(r"\\titreformulaire{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
                 self.formFormulaires.addWidget(
-                    CheckWidget({'name': titre, 'type': 'formulaire', 'filename': name + '/' + name + '.pdf'}), i / 4,
-                                                                                                                i % 4)
+                    CheckWidget(
+                        {'name': titre, 'filename': 'Formulaires/' + name + '/' + name + '.pdf'}, db.formulaires),
+                    i / 4, i % 4)
                 i += 1
         i = 0
         for name in sorted(os.listdir('Colles')):
             if 'ProgColles' in name and os.path.isdir('Colles/' + name):
                 self.formColles.addWidget(
-                    CheckWidget({'name': name, 'type': 'colle', 'filename': name + '/' + name + '.pdf'}), i / 4,
-                                                                                                          i % 4)
+                    CheckWidget({'name': name, 'filename': 'Colles/' + name + '/' + name + '.pdf'}, db.colles), i / 4,
+                                                                                                                i % 4)
                 i += 1
         i = 0
         for name in sorted(os.listdir('Interros')):
             if 'Interro' in name and os.path.isdir('Interros/' + name):
                 self.formInterros.addWidget(
-                    CheckWidget({'name': name, 'type': 'interro', 'filename': name + '/' + name + '.pdf'}), i / 4,
-                                                                                                            i % 4)
+                    CheckWidget({'name': name, 'filename': 'Interros/' + name + '/' + name + '.pdf'}, db.interros),
+                    i / 4, i % 4)
                 i += 1
         i = 0
         for name in sorted(os.listdir('TD')):
@@ -199,9 +211,9 @@ class WebSite(form_class, base_class):
                 f.close()
                 titre = re.search(r"\\titretd{(.*?)}", s, re.DOTALL).group(1).replace('\\\\', ' ')
                 self.formTD.addWidget(MultipleCheckWidget(titre, [
-                    {'name': titre, 'type': 'td', 'subtype': 'enonce', 'filename': name + '/' + name + '.pdf'},
-                    {'name': titre, 'type': 'td', 'subtype': 'corrige',
-                     'filename': name + '/' + name + '_corrige.pdf'}]), i / 4, i % 4)
+                    {'name': titre, 'subtype': 'enonce', 'filename': 'TD/' + name + '/' + name + '.pdf'},
+                    {'name': titre, 'subtype': 'corrige', 'filename': 'TD/' + name + '/' + name + '_corrige.pdf'}],
+                                                          db.td), i / 4, i % 4)
                 i += 1
 
     @QtCore.pyqtSlot()
@@ -229,6 +241,10 @@ class WebSite(form_class, base_class):
                 self.formAnimations.removeWidget(widget)
                 widget.deleteLater()
                 self.formAnimations.update()
+
+    @QtCore.pyqtSlot()
+    def on_transferButton_clicked(self):
+        pass
 
 
 if __name__ == '__main__':
