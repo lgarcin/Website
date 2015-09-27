@@ -9,7 +9,7 @@ from pyquery import PyQuery as pq
 from datetime import datetime
 
 scriptdir = os.path.dirname(__file__)
-form_class, base_class = uic.loadUiType(scriptdir + '/website.ui')
+form_class, base_class = uic.loadUiType(scriptdir + '/website_ftpqt4.ui')
 
 
 def read(filename):

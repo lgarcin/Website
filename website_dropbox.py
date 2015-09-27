@@ -9,13 +9,13 @@ Created on 27 nov. 2014
 
 
 import sys, locale, os, re, json, io
-from PyQt4 import QtGui, QtCore, uic
+from PyQt5 import QtWidgets, QtCore, QtGui, uic
 from dropbox.client import DropboxClient
 from datetime import datetime
 from dateutil import parser
 
 scriptdir = os.path.dirname(__file__)
-form_class, base_class = uic.loadUiType(os.path.join(scriptdir, 'websitePrepa.ui'))
+form_class, base_class = uic.loadUiType(os.path.join(scriptdir, 'website_dropbox.ui'))
 
 
 def read(filename):
@@ -30,25 +30,25 @@ def read(filename):
     return s
 
 
-class FileWidget(QtGui.QWidget):
+class FileWidget(QtWidgets.QWidget):
     def __init__(self, fw, parent=None):
         super(FileWidget, self).__init__(parent)
         self.transferInfo = self.parent().transferInfo
         self.fw = fw
-        nomWidget = QtGui.QLabel(fw['type'])
-        self.fileChooserWidget = QtGui.QPushButton()
+        nomWidget = QtWidgets.QLabel(fw['type'])
+        self.fileChooserWidget = QtWidgets.QPushButton()
         if 'path' in self.fw:
             self.fileChooserWidget.setText(fw['path'])
             self.transferInfo.append(self.fw)
         else:
             self.fileChooserWidget.setText('Choisir un fichier...')
         self.fileChooserWidget.clicked.connect(self.selectFile)
-        layout = QtGui.QHBoxLayout(self)
+        layout = QtWidgets.QHBoxLayout(self)
         layout.addWidget(nomWidget)
         layout.addWidget(self.fileChooserWidget)
 
     def selectFile(self):
-        fname = QtGui.QFileDialog.getOpenFileName(self, 'Choisir un fichier...')
+        fname = QtWidgets.QFileDialog.getOpenFileName(self, 'Choisir un fichier...')
         if fname:
             self.fileChooserWidget.setText(fname)
             if self.fw not in self.transferInfo:
@@ -60,7 +60,7 @@ class FileWidget(QtGui.QWidget):
                 self.transferInfo.remove(self.fw)
 
 
-class EnonceCorrigeWidget(QtGui.QWidget):
+class EnonceCorrigeWidget(QtWidgets.QWidget):
     def __init__(self, ec, parent=None):
         super(EnonceCorrigeWidget, self).__init__(parent)
         self.transferInfo = self.parent().transferInfo
@@ -68,10 +68,10 @@ class EnonceCorrigeWidget(QtGui.QWidget):
         self.transferInfo.append(ec)
         self.enonce = ec['enoncepath']
         self.corrige = ec['corrigepath']
-        nomWidget = QtGui.QLabel(ec['nom'])
+        nomWidget = QtWidgets.QLabel(ec['nom'])
 
-        self.enonceWidget = QtGui.QCheckBox('Enoncé')
-        self.corrigeWidget = QtGui.QCheckBox('Corrigé')
+        self.enonceWidget = QtWidgets.QCheckBox('Enoncé')
+        self.corrigeWidget = QtWidgets.QCheckBox('Corrigé')
         self.enonceWidget.stateChanged.connect(self.updateInfo)
         self.corrigeWidget.stateChanged.connect(self.updateInfo)
 
@@ -85,7 +85,7 @@ class EnonceCorrigeWidget(QtGui.QWidget):
         if not os.path.exists(os.path.join(self.parent().localDir, self.corrige)):
             self.corrigeWidget.setDisabled(True)
 
-        layout = QtGui.QHBoxLayout(self)
+        layout = QtWidgets.QHBoxLayout(self)
         layout.addWidget(nomWidget)
         layout.addWidget(self.enonceWidget)
         layout.addWidget(self.corrigeWidget)
@@ -104,72 +104,72 @@ class EnonceCorrigeWidget(QtGui.QWidget):
             self.transferInfo.append(self.current)
 
 
-class CoursWidget(QtGui.QWidget):
+class CoursWidget(QtWidgets.QWidget):
     def __init__(self, cours, parent=None):
         super(CoursWidget, self).__init__(parent)
         transferInfo = self.parent().transferInfo
-        coursWidget = QtGui.QCheckBox(cours['nom'])
+        coursWidget = QtWidgets.QCheckBox(cours['nom'])
         coursWidget.stateChanged.connect(
             lambda state: transferInfo.append(cours) if state == QtCore.Qt.Checked else transferInfo.remove(cours))
         if cours in self.parent().remoteInfo:
             coursWidget.setCheckState(QtCore.Qt.Checked)
         if not os.path.exists(os.path.join(self.parent().localDir, cours['path'])):
             coursWidget.setDisabled(True)
-        layout = QtGui.QHBoxLayout(self)
+        layout = QtWidgets.QHBoxLayout(self)
         layout.addWidget(coursWidget)
 
 
-class AnimationWidget(QtGui.QWidget):
+class AnimationWidget(QtWidgets.QWidget):
     def __init__(self, animation, parent=None):
         super(AnimationWidget, self).__init__(parent)
         transferInfo = self.parent().transferInfo
         transferInfo.append(animation)
         self.destroyed.connect(lambda _: transferInfo.remove(animation))
-        nomWidget = QtGui.QLineEdit(animation['nom'])
+        nomWidget = QtWidgets.QLineEdit(animation['nom'])
         nomWidget.home(True)
         nomWidget.deselect()
         nomWidget.textChanged.connect(lambda text, animation=animation: animation.update({'nom': text}))
-        lienWidget = QtGui.QLineEdit(animation['lien'])
+        lienWidget = QtWidgets.QLineEdit(animation['lien'])
         lienWidget.home(True)
         lienWidget.deselect()
         lienWidget.textChanged.connect(lambda text, animation=animation: animation.update({'lien': text}))
-        iconWidget = QtGui.QComboBox()
+        iconWidget = QtWidgets.QComboBox()
         icons = ["GeoGebra", "Flash", "JavaScript", "Python"]
         iconWidget.addItems(icons)
         iconWidget.setCurrentIndex(iconWidget.findText(animation['icon']))
         iconWidget.currentIndexChanged.connect(lambda index: animation.update({'icon': iconWidget.currentText()}))
-        self.check = QtGui.QCheckBox()
-        layout = QtGui.QHBoxLayout(self)
+        self.check = QtWidgets.QCheckBox()
+        layout = QtWidgets.QHBoxLayout(self)
         layout.addWidget(nomWidget)
         layout.addWidget(lienWidget)
         layout.addWidget(iconWidget)
         layout.addWidget(self.check)
 
 
-class ADSWidget(QtGui.QWidget):
+class ADSWidget(QtWidgets.QWidget):
     def __init__(self, ads, parent=None):
         super(ADSWidget, self).__init__(parent)
         transferInfo = self.parent().transferInfo
         transferInfo.append(ads)
         self.destroyed.connect(lambda _: transferInfo.remove(ads))
-        nomWidget = QtGui.QLineEdit(ads['nom'])
+        nomWidget = QtWidgets.QLineEdit(ads['nom'])
         nomWidget.home(True)
         nomWidget.deselect()
         nomWidget.textChanged.connect(lambda text, ads=ads: ads.update({'nom': text}))
-        eleveWidget = QtGui.QLineEdit(ads['eleve'])
+        eleveWidget = QtWidgets.QLineEdit(ads['eleve'])
         eleveWidget.home(True)
         eleveWidget.deselect()
         eleveWidget.textChanged.connect(lambda text, ads=ads: ads.update({'eleve': text}))
-        dateWidget = QtGui.QDateTimeEdit(QtCore.QDate.fromString(ads['date'], format=QtCore.Qt.DefaultLocaleLongDate))
+        dateWidget = QtWidgets.QDateTimeEdit(QtCore.QDate.fromString(ads['date'], format=QtCore.Qt.DefaultLocaleLongDate))
         dateWidget.setCalendarPopup(True)
         dateWidget.dateChanged.connect(
             lambda date, ads=ads: ads.update({'date': date.toString(QtCore.Qt.DefaultLocaleLongDate)}))
-        fileWidget = QtGui.QComboBox()
+        fileWidget = QtWidgets.QComboBox()
         fileWidget.addItems(os.listdir('ADS'))
         fileWidget.setCurrentIndex(fileWidget.findText(ads['path']))
         fileWidget.currentIndexChanged.connect(lambda text, ads=ads: ads.update({'path': text}))
-        self.check = QtGui.QCheckBox()
-        layout = QtGui.QHBoxLayout(self)
+        self.check = QtWidgets.QCheckBox()
+        layout = QtWidgets.QHBoxLayout(self)
         layout.addWidget(nomWidget)
         layout.addWidget(eleveWidget)
         layout.addWidget(dateWidget)
@@ -377,9 +377,9 @@ class WebSite(form_class, base_class):
 
     @QtCore.pyqtSlot()
     def on_transferButton_clicked(self):
-        self.message = QtGui.QMessageBox(QtGui.QMessageBox.Information, "Transfert", "Transfert",
-                                         QtGui.QMessageBox.Cancel)
-        spacer = QtGui.QSpacerItem(500, 0, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
+        self.message = QtWidgets.QMessageBox(QtWidgets.QMessageBox.Information, "Transfert", "Transfert",
+                                         QtWidgets.QMessageBox.Cancel)
+        spacer = QtWidgets.QSpacerItem(500, 0, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         l = self.message.layout()
         l.addItem(spacer, l.rowCount(), 0, 1, l.columnCount())
         self.detailedMessage = 'Début du transfert\n'
@@ -445,7 +445,7 @@ class TransferThread(QtCore.QThread):
 
 if __name__ == '__main__':
     locale.setlocale(locale.LC_ALL, '')
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     myWebSite = WebSite()
     myWebSite.show()
     sys.exit(app.exec_())

@@ -7,7 +7,7 @@ from datetime import datetime
 from ftputil import FTPHost
 
 scriptdir = os.path.dirname(__file__)
-form_class, base_class = uic.loadUiType(scriptdir + '/website.ui')
+form_class, base_class = uic.loadUiType(scriptdir + '/website_ftputil.ui')
 
 
 def read(filename):
@@ -815,12 +815,12 @@ class TransferThread(QtCore.QThread):
 
         for dirpath, dirnames, filenames in self.ftp.walk('/', topdown=False):
             for file in filenames:
-                fullpath = os.path.join(dirpath, file).replace('\\', '/')
+                fullpath = QtCore.QDir.fromNativeSeparators(os.path.join(dirpath, file))
                 if fullpath[1:] not in self.localFileList:
                     self.ftp.remove(fullpath)
                     self.message.emit("Destruction du fichier " + fullpath)
             for d in dirnames:
-                fullpath = os.path.join(dirpath, d).replace('\\', '/')
+                fullpath = QtCore.QDir.fromNativeSeparators(os.path.join(dirpath, d))
                 if not self.ftp.listdir(fullpath):
                     self.ftp.rmdir(fullpath)
                     self.message.emit("Destruction du répertoire " + fullpath)

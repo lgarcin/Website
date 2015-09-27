@@ -1,11 +1,11 @@
 __author__ = 'Laurent'
 
 import sys, locale, os, re
-from PyQt4 import QtGui, QtCore, uic
+from PyQt5 import QtGui, QtCore, QtWidgets, uic
 from pymongo import MongoClient
 
 script_directory = os.path.dirname(__file__)
-form_class, base_class = uic.loadUiType(os.path.join(script_directory, 'websiteMPSI.ui'))
+form_class, base_class = uic.loadUiType(os.path.join(script_directory, 'website_mongo.ui'))
 
 client = MongoClient('ds039351.mongolab.com:39351')
 db = client.websiteprepa
@@ -14,12 +14,12 @@ db.authenticate('lgarcin', 'ua$hu~ka77')
 localDir = "F:/Documents/Enseignement/Corot/"
 
 
-class FileWidget(QtGui.QGroupBox):
+class FileWidget(QtWidgets.QGroupBox):
     def __init__(self, file_dict, collection, parent):
         super(FileWidget, self).__init__(file_dict['name'], parent)
         self.file_dict = file_dict
         self.collection = collection
-        self.fileChooserWidget = QtGui.QPushButton()
+        self.fileChooserWidget = QtWidgets.QPushButton()
         q = collection.find_one({'name': file_dict['name']})
         if q:
             file_dict['filename'] = q['filename']
@@ -28,12 +28,12 @@ class FileWidget(QtGui.QGroupBox):
         else:
             self.fileChooserWidget.setText('Choisir un fichier...')
         self.fileChooserWidget.clicked.connect(self.select_file)
-        layout = QtGui.QHBoxLayout(self)
+        layout = QtWidgets.QHBoxLayout(self)
         layout.addWidget(self.fileChooserWidget)
         self.parent().transferButton.clicked.connect(self.transfer)
 
     def select_file(self):
-        filename = QtGui.QFileDialog.getOpenFileName(self, 'Choisir un fichier...', localDir)
+        filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Choisir un fichier...', localDir)
         if filename:
             filename = os.path.relpath(filename, localDir).replace('\\', '/')
             self.fileChooserWidget.setText(filename)
@@ -46,18 +46,18 @@ class FileWidget(QtGui.QGroupBox):
             self.collection.update_one({'name': self.file_dict['name']}, {'$set': self.file_dict}, upsert=True)
 
 
-class CheckWidget(QtGui.QWidget):
+class CheckWidget(QtWidgets.QWidget):
     def __init__(self, file_dict, collection, parent):
         super(CheckWidget, self).__init__(parent)
         self.file_dict = file_dict
         self.collection = collection
         f = open(self.file_dict['filename'], mode='rb')
-        self.checkbox_widget = QtGui.QCheckBox(file_dict['subtype'] if 'subtype' in file_dict else file_dict['name'])
+        self.checkbox_widget = QtWidgets.QCheckBox(file_dict['subtype'] if 'subtype' in file_dict else file_dict['name'])
         if self.collection.find_one({'filename': file_dict['filename']}):
             self.checkbox_widget.setCheckState(QtCore.Qt.Checked)
         if not os.path.exists(file_dict['filename']):
             self.checkbox_widget.setDisabled(True)
-        layout = QtGui.QHBoxLayout(self)
+        layout = QtWidgets.QHBoxLayout(self)
         layout.addWidget(self.checkbox_widget)
         self.parent().transferButton.clicked.connect(self.transfer)
 
@@ -72,34 +72,34 @@ class CheckWidget(QtGui.QWidget):
             self.collection.delete_one(self.file_dict)
 
 
-class MultipleCheckWidget(QtGui.QGroupBox):
+class MultipleCheckWidget(QtWidgets.QGroupBox):
     def __init__(self, name, file_dict_list, collection, parent):
         super(MultipleCheckWidget, self).__init__(name, parent)
-        layout = QtGui.QHBoxLayout(self)
+        layout = QtWidgets.QHBoxLayout(self)
         for file_dict in file_dict_list:
             layout.addWidget(CheckWidget(file_dict, collection, parent))
 
 
-class LinkWidget(QtGui.QWidget):
+class LinkWidget(QtWidgets.QWidget):
     def __init__(self, link_dict, collection, parent):
         super(LinkWidget, self).__init__(parent)
         self.link_dict = link_dict
         self.collection = collection
-        name_widget = QtGui.QLineEdit(link_dict['name'])
+        name_widget = QtWidgets.QLineEdit(link_dict['name'])
         name_widget.home(True)
         name_widget.deselect()
         name_widget.textChanged.connect(lambda text, link_dict=link_dict: link_dict.update({'name': text}))
-        link_widget = QtGui.QLineEdit(link_dict['link'])
+        link_widget = QtWidgets.QLineEdit(link_dict['link'])
         link_widget.home(True)
         link_widget.deselect()
         link_widget.textChanged.connect(lambda text, link_dict=link_dict: link_dict.update({'link': text}))
-        icon_widget = QtGui.QComboBox()
+        icon_widget = QtWidgets.QComboBox()
         icons = ["GeoGebra", "Flash", "JavaScript", "Python"]
         icon_widget.addItems(icons)
         icon_widget.setCurrentIndex(icon_widget.findText(link_dict['icon']))
         icon_widget.currentIndexChanged.connect(lambda index: link_dict.update({'icon': icon_widget.currentText()}))
-        self.check = QtGui.QCheckBox()
-        layout = QtGui.QHBoxLayout(self)
+        self.check = QtWidgets.QCheckBox()
+        layout = QtWidgets.QHBoxLayout(self)
         layout.addWidget(name_widget)
         layout.addWidget(link_widget)
         layout.addWidget(icon_widget)
@@ -113,32 +113,32 @@ class LinkWidget(QtGui.QWidget):
         self.collection.delete_one(self.file_dict)
 
 
-class ScheduleWidget(QtGui.QWidget):
+class ScheduleWidget(QtWidgets.QWidget):
     def __init__(self, schedule_dict, collection, parent):
         super(ScheduleWidget, self).__init__(parent)
         self.collection = collection
-        name_widget = QtGui.QLineEdit(schedule_dict['name'])
+        name_widget = QtWidgets.QLineEdit(schedule_dict['name'])
         name_widget.home(True)
         name_widget.deselect()
         name_widget.textChanged.connect(lambda text, schedule_dict=schedule_dict: schedule_dict.update({'name': text}))
-        person_widget = QtGui.QLineEdit(schedule_dict['person'])
+        person_widget = QtWidgets.QLineEdit(schedule_dict['person'])
         person_widget.home(True)
         person_widget.deselect()
         person_widget.textChanged.connect(
             lambda text, schedule_dict=schedule_dict: schedule_dict.update({'person': text}))
-        date_widget = QtGui.QDateTimeEdit(
+        date_widget = QtWidgets.QDateTimeEdit(
             QtCore.QDate.fromString(schedule_dict['date'], format=QtCore.Qt.DefaultLocaleLongDate))
         date_widget.setCalendarPopup(True)
         date_widget.dateChanged.connect(
             lambda date, schedule_dict=schedule_dict: schedule_dict.update(
                 {'date': date.toString(QtCore.Qt.DefaultLocaleLongDate)}))
-        file_widget = QtGui.QComboBox()
+        file_widget = QtWidgets.QComboBox()
         file_widget.addItems(os.listdir('ADS'))
         file_widget.setCurrentIndex(file_widget.findText(schedule_dict['filename']))
         file_widget.currentIndexChanged.connect(
             lambda text, schedule_dict=schedule_dict: schedule_dict.update({'filename': text}))
-        self.check = QtGui.QCheckBox()
-        layout = QtGui.QHBoxLayout(self)
+        self.check = QtWidgets.QCheckBox()
+        layout = QtWidgets.QHBoxLayout(self)
         layout.addWidget(name_widget)
         layout.addWidget(person_widget)
         layout.addWidget(date_widget)
@@ -270,7 +270,7 @@ class WebSite(form_class, base_class):
 
 if __name__ == '__main__':
     locale.setlocale(locale.LC_ALL, '')
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     myWebSite = WebSite()
     myWebSite.show()
     sys.exit(app.exec_())
