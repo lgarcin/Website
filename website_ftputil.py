@@ -4,6 +4,7 @@ import sys, locale, os, re
 from PyQt5 import QtCore, QtWidgets, QtGui, uic
 from pyquery import PyQuery as pq
 from datetime import datetime
+from time import sleep
 from ftputil import FTPHost
 
 scriptdir = os.path.dirname(__file__)
@@ -94,9 +95,8 @@ class WebSite(form_class, base_class):
             f.close()
 
     def transfer(self):
-        self.message.setInformativeText("Connexion au serveur FTP")
-        # self.thread = TransferThread(self.localFileList(), FTPHost("127.0.0.1", "lgarcin", ""))
-        self.thread = TransferThread(self.localFileList(), FTPHost("ftpperso.free.fr", "laurentb.garcin", "xRSGeOeu"))
+        self.message.setInformativeText("Synchronisation avec le serveur FTP")
+        self.thread = TransferThread(self.localFileList())
         self.thread.start()
         self.thread.message.connect(self.updateMessage)
 
@@ -796,35 +796,48 @@ class WebSite(form_class, base_class):
         self.detailedMessage = mess + '\n' + self.detailedMessage
         self.message.setDetailedText(self.detailedMessage)
 
+
 class TransferThread(QtCore.QThread):
     message = QtCore.pyqtSignal(str)
 
-    def __init__(self, localFileList, ftp, parent=None):
+    def __init__(self, localFileList, parent=None):
         super(TransferThread, self).__init__(parent)
         self.localFileList = localFileList
-        self.ftp = ftp
 
     def run(self):
-        for file in self.localFileList:
-            path = os.path.dirname(file)
-            if not self.ftp.path.exists(path):
-                self.ftp.makedirs(path)
-                self.message.emit("Création du répertoire " + path)
-            self.ftp.upload_if_newer(file, file)
-            self.message.emit("Création du fichier " + file)
+        # with FTPHost("127.0.0.1", "lgarcin", "") as ftp:
+        with FTPHost("ftpperso.free.fr", "laurentb.garcin", "xRSGeOeu") as ftp:
+            for file in self.localFileList:
+                path = os.path.dirname(file)
+                if not ftp.path.exists(path):
+                    ftp.makedirs(path)
+                    self.message.emit("Création du répertoire " + path)
+                rate = True
+                while rate:
+                    try:
+                        if ftp.upload_if_newer(file, file):
+                            self.message.emit("Création du fichier " + file)
+                        else:
+                            # self.message.emit("Passage du fichier " + file)
+                            pass
+                        rate = False
+                    except:
+                        self.message.emit("Création du fichier " + file + " abandonnée")
+                        sleep(1)
+            for dirpath, dirnames, filenames in ftp.walk('/', topdown=False):
+                for file in filenames:
+                    fullpath = QtCore.QDir.fromNativeSeparators(os.path.join(dirpath, file))
+                    if fullpath[1:] not in self.localFileList:
+                        ftp.remove(fullpath)
+                        self.message.emit("Destruction du fichier " + fullpath)
+                for d in dirnames:
+                    fullpath = QtCore.QDir.fromNativeSeparators(os.path.join(dirpath, d))
+                    if not ftp.listdir(fullpath):
+                        ftp.rmdir(fullpath)
+                        self.message.emit("Destruction du répertoire " + fullpath)
 
-        for dirpath, dirnames, filenames in self.ftp.walk('/', topdown=False):
-            for file in filenames:
-                fullpath = QtCore.QDir.fromNativeSeparators(os.path.join(dirpath, file))
-                if fullpath[1:] not in self.localFileList:
-                    self.ftp.remove(fullpath)
-                    self.message.emit("Destruction du fichier " + fullpath)
-            for d in dirnames:
-                fullpath = QtCore.QDir.fromNativeSeparators(os.path.join(dirpath, d))
-                if not self.ftp.listdir(fullpath):
-                    self.ftp.rmdir(fullpath)
-                    self.message.emit("Destruction du répertoire " + fullpath)
         self.message.emit("Transfert terminé")
+
 
 
 if __name__ == '__main__':

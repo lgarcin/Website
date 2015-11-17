@@ -2,23 +2,18 @@ __author__ = 'Laurent'
 
 import sys, locale, os, re
 from PyQt5 import QtGui, QtCore, QtWidgets, uic
-from pymongo import MongoClient
 
 script_directory = os.path.dirname(__file__)
 form_class, base_class = uic.loadUiType(os.path.join(script_directory, 'website_mongo.ui'))
 
-client = MongoClient('ds039351.mongolab.com:39351')
-db = client.websiteprepa
-db.authenticate('lgarcin', 'ua$hu~ka77')
-
 localDir = "F:/Documents/Enseignement/Corot/"
 
+json_dict = {}
 
 class FileWidget(QtWidgets.QGroupBox):
-    def __init__(self, file_dict, collection, parent):
+    def __init__(self, file_dict):
         super(FileWidget, self).__init__(file_dict['name'], parent)
         self.file_dict = file_dict
-        self.collection = collection
         self.fileChooserWidget = QtWidgets.QPushButton()
         q = collection.find_one({'name': file_dict['name']})
         if q:
@@ -51,7 +46,8 @@ class CheckWidget(QtWidgets.QWidget):
         super(CheckWidget, self).__init__(parent)
         self.file_dict = file_dict
         self.collection = collection
-        self.checkbox_widget = QtWidgets.QCheckBox(file_dict['subtype'] if 'subtype' in file_dict else file_dict['name'])
+        self.checkbox_widget = QtWidgets.QCheckBox(
+            file_dict['subtype'] if 'subtype' in file_dict else file_dict['name'])
         if self.collection.find_one({'filename': file_dict['filename']}):
             self.checkbox_widget.setCheckState(QtCore.Qt.Checked)
         if not os.path.exists(file_dict['filename']):

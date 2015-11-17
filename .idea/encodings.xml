@@ -3,5 +3,6 @@
   <component name="Encoding">
     <file url="file://$PROJECT_DIR$/website_ftputil.py" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/website_mongo.py" charset="UTF-8" />
+    <file url="PROJECT" charset="UTF-8" />
   </component>
 </project>
