@@ -1,6 +1,6 @@
 __author__ = 'Laurent'
 
-import sys, locale, os, re
+import sys, locale, os, re, json
 from PyQt5 import QtGui, QtCore, QtWidgets, uic
 
 script_directory = os.path.dirname(__file__)
@@ -8,63 +8,57 @@ form_class, base_class = uic.loadUiType(os.path.join(script_directory, 'website_
 
 localDir = "F:/Documents/Enseignement/Corot/"
 
-json_dict = {}
+try:
+    with open(os.path.join(localDir, 'dict.json')) as json_file:
+        json_list = json.load(json_file)
+except:
+    json_list = []
+
 
 class FileWidget(QtWidgets.QGroupBox):
-    def __init__(self, file_dict):
-        super(FileWidget, self).__init__(file_dict['name'], parent)
-        self.file_dict = file_dict
+    def __init__(self, file_dict, parent):
+        super(FileWidget, self).__init__(file_dict['title'], parent)
         self.fileChooserWidget = QtWidgets.QPushButton()
-        q = collection.find_one({'name': file_dict['name']})
+        q = next((item for item in json_list if item['title'] == file_dict['title']), None)
         if q:
-            file_dict['filename'] = q['filename']
-        if 'filename' in file_dict:
-            self.fileChooserWidget.setText(file_dict['filename'])
+            self.file_dict = q
+        else:
+            self.file_dict = file_dict
+            json_list.append(self.file_dict)
+        if 'url' in file_dict:
+            self.fileChooserWidget.setText(file_dict['url'])
         else:
             self.fileChooserWidget.setText('Choisir un fichier...')
         self.fileChooserWidget.clicked.connect(self.select_file)
         layout = QtWidgets.QHBoxLayout(self)
         layout.addWidget(self.fileChooserWidget)
-        self.parent().transferButton.clicked.connect(self.transfer)
 
     def select_file(self):
         filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Choisir un fichier...', localDir)
         if filename:
             filename = os.path.relpath(filename, localDir).replace('\\', '/')
             self.fileChooserWidget.setText(filename)
-            self.file_dict.update({'filename': filename})
+            self.file_dict.update({'url': filename})
         else:
             self.fileChooserWidget.setText('Choisir un fichier...')
-
-    def transfer(self):
-        if 'filename' in self.file_dict:
-            self.collection.update_one({'name': self.file_dict['name']}, {'$set': self.file_dict}, upsert=True)
 
 
 class CheckWidget(QtWidgets.QWidget):
     def __init__(self, file_dict, collection, parent):
         super(CheckWidget, self).__init__(parent)
-        self.file_dict = file_dict
-        self.collection = collection
         self.checkbox_widget = QtWidgets.QCheckBox(
-            file_dict['subtype'] if 'subtype' in file_dict else file_dict['name'])
-        if self.collection.find_one({'filename': file_dict['filename']}):
+            file_dict['subcategory'] if 'category' in file_dict else file_dict['title'])
+        q = next((item for item in json_list if item['title'] == file_dict['title']))
+        if q:
+            self.file_dict = q
             self.checkbox_widget.setCheckState(QtCore.Qt.Checked)
-        if not os.path.exists(file_dict['filename']):
+        if not os.path.exists(file_dict['url']):
             self.checkbox_widget.setDisabled(True)
         layout = QtWidgets.QHBoxLayout(self)
         layout.addWidget(self.checkbox_widget)
         self.parent().transferButton.clicked.connect(self.transfer)
-
-    def transfer(self):
-        if self.checkbox_widget.checkState() == QtCore.Qt.Checked:
-            if 'subtype' in self.file_dict:
-                self.collection.update_one({'name': self.file_dict['name'], 'subtype': self.file_dict['subtype']},
-                                           {'$set': self.file_dict}, upsert=True)
-            else:
-                self.collection.update_one({'name': self.file_dict['name']}, {'$set': self.file_dict}, upsert=True)
-        else:
-            self.collection.delete_one(self.file_dict)
+        self.checkbox_widget.stateChanged.connect(lambda _: json_list.append(
+            self.file_dict) if self.checkbox_widget.checkState() == QtCore.Qt.Checked else json.remove(self.file_dict))
 
 
 class MultipleCheckWidget(QtWidgets.QGroupBox):
@@ -160,11 +154,11 @@ class WebSite(form_class, base_class):
         self.fill_forms()
 
     def fill_forms(self):
-        for name in ('Colloscope', 'Emploi du temps', 'Planning des DS'):
-            self.formVieClasse.addWidget(FileWidget({'name': name}, db.vieclasse, self))
+        for title in ('Colloscope', 'Emploi du temps', 'Planning des DS'):
+            self.formVieClasse.addWidget(FileWidget({'title': title, 'category': 'VieClasse'}, self))
 
         for name in ('Notes premier semestre', 'Notes second semestre'):
-            self.formNotes.addWidget(FileWidget({'name': name}, db.notes, self))
+            self.formNotes.addWidget(FileWidget({'title': title}, db.notes, self))
 
         i = 0
         for name in sorted(os.listdir('DS')):
