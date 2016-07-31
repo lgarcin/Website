@@ -89,9 +89,9 @@ class WebSite(form_class, base_class):
     def writeLocalHTML(self):
         self.message.setInformativeText("Enregistement des fichiers HTML")
         with open("index.html", "w", encoding='utf8') as f:
-            f.write(
-                '<!DOCTYPE html><!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7"><![endif]--><!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]--><!--[if IE 8]><html class="no-js lt-ie9"><![endif]--><!--[if gt IE 8]><!-->')
-            f.write(self.html.outerHtml())
+            f.write('<!DOCTYPE html><html>')
+            f.write(self.html.html(method='html'))
+            f.write('</html>')
             f.close()
 
     def transfer(self):
@@ -837,7 +837,6 @@ class TransferThread(QtCore.QThread):
                         self.message.emit("Destruction du répertoire " + fullpath)
 
         self.message.emit("Transfert terminé")
-
 
 
 if __name__ == '__main__':

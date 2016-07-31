@@ -58,7 +58,7 @@ class CheckWidget(QtWidgets.QWidget):
         layout.addWidget(self.checkbox_widget)
         self.parent().transferButton.clicked.connect(self.transfer)
         self.checkbox_widget.stateChanged.connect(lambda _: json_list.append(
-            self.file_dict) if self.checkbox_widget.checkState() == QtCore.Qt.Checked else json.remove(self.file_dict))
+            self.file_dict) if self.checkbox_widget.checkState() == QtCore.Qt.Checked else json_list.remove(self.file_dict))
 
 
 class MultipleCheckWidget(QtWidgets.QGroupBox):
