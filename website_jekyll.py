@@ -3,11 +3,12 @@ from PyQt5 import QtWidgets, QtCore, QtGui, uic
 from datetime import datetime
 from natsort import natsorted
 from yaml import dump, load
-from git import Repo
+
+# from git import Repo
 
 scriptDir = QtCore.QDir(__file__)
-directory = QtCore.QDir('F:/Documents/Enseignement/Corot/')
-saveDirectory = QtCore.QDir('F:/Documents/Github/lgarcin.github.io')
+directory = QtCore.QDir('E:/Documents/Enseignement/Corot2016/')
+saveDirectory = QtCore.QDir('E:/Documents/Github/lgarcin.github.io')
 
 
 def convert_dictionary_to_array(d):
@@ -57,7 +58,7 @@ class FileWidget(MyWidget):
         box = QtWidgets.QGroupBox(title)
         self.fileChooserWidget = QtWidgets.QPushButton(box)
         if 'path' in item:
-            self.fileChooserWidget.setText(item['path'])
+            self.fileChooserWidget.setText(item['path'].fileName())
         else:
             self.fileChooserWidget.setText('Choisir un fichier...')
 
@@ -118,17 +119,21 @@ class DictionaryHandler:
         for category in yamlDictionary:
             yamlDictionary[category] = convert_array_to_dictionary(yamlDictionary[category])
 
+        dd = yamlDictionary['VieClasse'] if 'VieClasse' in yamlDictionary else {}
+        categorydir = QtCore.QDir(self.directory)
+        categorydir.cd('VieClasse')
         self.dictionary['VieClasse'] = {
-            'Colloscope': {'selected': False},
-            'Emploi du temps': {'selected': False},
-            'Planning des DS': {'selected': False},
-        }
+            t: {
+                'path': QtCore.QFileInfo(categorydir, dd[t]['path']),
+                'selected': True} if t in dd and 'path' in dd[t] else {'selected': False} for t in
+            ('Emploi du temps', 'Colloscope', 'Planning des DS')
+            }
         for category in ('DM', 'DS'):
             categorydir = QtCore.QDir(self.directory)
             categorydir.cd(category)
             d = {}
             self.dictionary[category] = d
-            dd = yamlDictionary[category]
+            dd = yamlDictionary[category] if category in yamlDictionary else {}
             for info in categorydir.entryInfoList(QtCore.QDir.AllDirs | QtCore.QDir.NoDotAndDotDot):
                 if info.isDir():
                     d[info.baseName()] = {
@@ -136,7 +141,7 @@ class DictionaryHandler:
                             'path': QtCore.QFileInfo(QtCore.QDir(info.filePath()), info.baseName() + '.pdf'),
                             'selected': info.baseName() in dd and 'Enoncé' in dd[info.baseName()]},
                         'Corrigé': {'path': QtCore.QFileInfo(QtCore.QDir(info.filePath()),
-                                                             info.baseName() + '_corrige.pdf'),
+                                                             info.baseName() + '.corrige.pdf'),
                                     'selected': info.baseName() in dd and 'Corrigé' in dd[info.baseName()]}
                     }
 
@@ -145,10 +150,7 @@ class DictionaryHandler:
             categorydir.cd(category)
             d = {}
             self.dictionary[category] = d
-            if category in yamlDictionary:
-                dd = yamlDictionary[category]
-            else:
-                dd = {}
+            dd = yamlDictionary[category] if category in yamlDictionary else{}
             for info in categorydir.entryInfoList(QtCore.QDir.AllDirs | QtCore.QDir.NoDotAndDotDot):
                 if info.isDir():
                     file = QtCore.QFile(info.filePath() + '/' + info.baseName() + '.tex')
@@ -165,7 +167,7 @@ class DictionaryHandler:
             categorydir.cd(category)
             d = {}
             self.dictionary[category] = d
-            dd = yamlDictionary[category]
+            dd = yamlDictionary[category] if category in yamlDictionary else {}
             for info in categorydir.entryInfoList(QtCore.QDir.AllDirs | QtCore.QDir.NoDotAndDotDot):
                 if info.isDir():
                     file = QtCore.QFile(info.filePath() + '/' + info.baseName() + '.tex')
@@ -179,13 +181,15 @@ class DictionaryHandler:
                             'path': QtCore.QFileInfo(QtCore.QDir(info.filePath()), info.baseName() + '.pdf'),
                             'selected': title in dd and 'Enoncé' in dd[title]},
                         'Corrigé': {'path': QtCore.QFileInfo(QtCore.QDir(info.filePath()),
-                                                             info.baseName() + '_corrige.pdf'),
+                                                             info.baseName() + '.corrige.pdf'),
                                     'selected': title in dd and 'Corrigé' in dd[title]}
                     }
 
     def saveDictionary(self):
         pdfsDirectory = QtCore.QDir(self.saveDirectory)
         pdfsDirectory.cd('pdfs')
+        for file in pdfsDirectory.entryList(QtCore.QDir.Files):
+            pdfsDirectory.remove(file)
 
         def copy(d, dd):
             if 'selected' not in d or d['selected'] == True:
