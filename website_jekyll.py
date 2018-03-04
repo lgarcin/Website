@@ -7,7 +7,7 @@ from yaml import dump, load
 # from git import Repo
 
 scriptDir = QtCore.QDir(__file__)
-directory = QtCore.QDir('E:/Documents/Enseignement/Corot2016/')
+directory = QtCore.QDir('E:/Documents/Enseignement/Corot2017/')
 saveDirectory = QtCore.QDir('E:/Documents/Github/lgarcin.github.io')
 
 
